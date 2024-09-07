@@ -1,14 +1,7 @@
 import { Exception } from '@adonisjs/core/exceptions'
-import { Engines } from './contracts/config.js'
-// import { DataTableAbstract } from './datatable_abstract.js'
-// import { DataTableAbstract } from './datatable_abstract.js'
 
 export default class Datatables {
-  protected engines: Engines
-
-  constructor(engines: Engines) {
-    this.engines = engines
-  }
+  constructor(protected engines: Record<string, any>) {}
 
   of(...source: any[]) {
     for (const engine of Object.values(this.engines)) {

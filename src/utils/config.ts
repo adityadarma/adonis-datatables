@@ -1,9 +1,13 @@
 import app from '@adonisjs/core/services/app'
-import { Config as ConfgContract } from '../contracts/config.js'
 import Obj from './obj.js'
+import { DatatablesConfig } from '../types/index.js'
 
 export default class Config {
-  constructor(protected config: ConfgContract) {}
+  protected config: DatatablesConfig
+
+  constructor(config: DatatablesConfig) {
+    this.config = config
+  }
 
   isWildcard(): boolean {
     return Obj.get(this.config, 'search.use_wildcards', false)

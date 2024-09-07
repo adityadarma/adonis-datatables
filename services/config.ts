@@ -1,5 +1,5 @@
 import app from '@adonisjs/core/services/app'
-import { Config } from '../src/contracts/config.js'
+import Config from '../src/utils/config.js'
 
 let config: Config
 

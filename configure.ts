@@ -13,5 +13,20 @@
 */
 
 import ConfigureCommand from '@adonisjs/core/commands/configure'
+import { stubsRoot } from './stubs/main.js'
 
-export async function configure(_command: ConfigureCommand) {}
+export async function configure(command: ConfigureCommand) {
+  const codemods = await command.createCodemods()
+
+  /**
+   * Publish config file
+   */
+  await codemods.makeUsingStub(stubsRoot, 'config/datatables.stub', {})
+
+  /**
+   * Add provider to rc file
+   */
+  await codemods.updateRcFile((rcFile) => {
+    rcFile.addProvider('@adityadarma/adonis-datatables/datatables_provider')
+  })
+}

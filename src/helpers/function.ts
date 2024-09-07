@@ -118,3 +118,21 @@ export function e(value: any): any {
   }
   return value
 }
+
+export function wrap(value: string): string {
+  if (value.includes(' as ')) {
+    const [column, alias] = value.split(' as ')
+    return `\`${column.trim()}\` as \`${alias.trim()}\``
+  }
+
+  return value
+    .split('.')
+    .map((segment) => `\`${toSnakeCase(segment)}\``)
+    .join('.')
+}
+
+export function toSnakeCase(str: string): string {
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1_$2') // Tambahkan underscore sebelum huruf besar
+    .toLowerCase() // Ubah seluruh string menjadi huruf kecil
+}

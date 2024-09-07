@@ -7,9 +7,9 @@
   },
   "type": "module",
   "files": [
-    "build/providers",
-    "build/services",
     "build/src",
+    "build/services",
+    "build/providers",
     "build/stubs",
     "build/index.d.ts",
     "build/index.js",
@@ -19,7 +19,9 @@
   "exports": {
     ".": "./build/index.js",
     "./datatables_provider": "./build/providers/datatables_provider.js",
-    "./datatables": "./build/services/datatables.js"
+    "./datatables": "./build/services/datatables.js",
+    "./lucid_datatable": "./build/src/lucid_datatable.js",
+    "./types": "./build/src/types/index.js"
   },
   "scripts": {
     "clean": "del-cli build",
@@ -45,7 +47,6 @@
     "@adonisjs/core": "^6.12.0",
     "@adonisjs/eslint-config": "^1.3.0",
     "@adonisjs/http-server": "^7.0.0",
-    "@adonisjs/lucid": "^20.5.1||^21.0.0",
     "@adonisjs/prettier-config": "^1.3.0",
     "@adonisjs/tsconfig": "^1.3.0",
     "@japa/assert": "^3.0.0",
@@ -53,6 +54,7 @@
     "@swc/core": "^1.6.3",
     "@types/lodash": "^4.17.7",
     "@types/node": "^20.14.5",
+    "@types/sprintf-js": "^1.1.4",
     "c8": "^10.1.2",
     "copyfiles": "^2.4.1",
     "del-cli": "^5.1.0",
@@ -68,7 +70,8 @@
     "lodash": "^4.17.21"
   },
   "peerDependencies": {
-    "@adonisjs/core": "^6.2.0"
+    "@adonisjs/core": "^6.2.0",
+    "@adonisjs/lucid": "^20.5.1||^21.0.0"
   },
   "publishConfig": {
     "access": "public",

@@ -62,10 +62,9 @@ export default class DataProcessor {
       }
 
       let value = this.addColumns(data, row.toJSON())
-      value = this.editColumns(value, row.toJSON());
+      value = this.editColumns(value, row.toJSON())
       value = this.setupRowVariables(value, row.toJSON())
       value = this.selectOnlyNeededColumns(value)
-      console.log(value)
       value = this.removeExcessColumns(value)
 
       if (this.$includeIndex) {
@@ -99,16 +98,18 @@ export default class DataProcessor {
     return data
   }
 
-  protected editColumns(data: Record<string, any>, _row: any): Record<string, any>
-  {
-      for (const value of Object.values(this.$editColumns)) {
-        lodash.set(data, value['name'], value['content'])
-      }
+  protected editColumns(data: Record<string, any>, _row: any): Record<string, any> {
+    for (const value of Object.values(this.$editColumns)) {
+      lodash.set(data, value['name'], value['content'])
+    }
 
-      return data;
+    return data
   }
 
-  protected setupRowVariables(data: Record<string, any>, row: Record<string, any>): Record<string, any> {
+  protected setupRowVariables(
+    data: Record<string, any>,
+    row: Record<string, any>
+  ): Record<string, any> {
     const processor = new RowProcessor(data, row)
 
     return processor
@@ -124,14 +125,15 @@ export default class DataProcessor {
       return data
     } else {
       const results: Record<string, any> = {}
+
       for (const value of Object.values(this.$onlyColumns)) {
         lodash.set(results, value, lodash.get(data, value))
       }
+
       for (const value of Object.values(this.$exceptions)) {
         if (lodash.get(data, value)) {
           lodash.set(results, value, lodash.get(data, value))
         }
-        lodash.set(results, value, lodash.get(data, value))
       }
 
       return results
@@ -175,25 +177,28 @@ export default class DataProcessor {
 
   protected escapeRow(row: Record<string, any>): Record<string, any> {
     const rawColumns: string[] = []
-    const arrayDot = lodash.transform(row, (result: Record<string, any>, value: any, key: string) => {
-      if (value) {
-        result[key] = value;
+    const arrayDot = lodash.transform(
+      row,
+      (result: Record<string, any>, value: any, key: string) => {
+        if (value) {
+          result[key] = value
+        }
       }
-    });
+    )
 
     Object.keys(arrayDot).forEach((key) => {
       if (!rawColumns.includes(key)) {
-        const value = lodash.get(arrayDot, key);
+        const value = lodash.get(arrayDot, key)
         if (lodash.isString(value)) {
-          arrayDot[key] = e(value);
+          arrayDot[key] = e(value)
         }
       }
-    });
+    })
 
     Object.keys(arrayDot).forEach((key) => {
-      lodash.set(row, key, arrayDot[key]);
-    });
+      lodash.set(row, key, arrayDot[key])
+    })
 
-    return row;
+    return row
   }
 }

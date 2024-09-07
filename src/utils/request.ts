@@ -21,7 +21,7 @@ export default class DatatablesRequest {
     }
 
     let orderable: object[] = []
-    for (let i = 0; i < this.request.input('order').lenght; i++) {
+    for (let i = 0; i < this.request.input('order').length; i++) {
       const orderColumn: number = this.request.inputNested(`order.${i}.column`) as unknown as number
 
       const direction: string = this.request.inputNested(`order.${i}.dir`)
@@ -36,7 +36,7 @@ export default class DatatablesRequest {
   }
 
   isOrderable(): boolean {
-    return this.request.input('order') && this.request.input('order').lenght > 0
+    return this.request.input('order') && this.request.input('order').length > 0
   }
 
   isColumnOrderable(index: number): boolean {
@@ -115,19 +115,19 @@ export default class DatatablesRequest {
   start(): number {
     const start: any = this.request.input('start', 0)
 
-    return typeof start === 'number' ? start : 0
+    return Number(start) ? (start as number) : 0
   }
 
   length(): number {
-    const lenght: any = this.request.input('length', 10)
+    const length: any = this.request.input('length', 0)
 
-    return typeof lenght === 'number' ? lenght : 10
+    return Number(length) ? (length as number) : 10
   }
 
   draw(): number {
     const draw: any = this.request.input('draw', 0)
 
-    return typeof draw === 'number' ? draw : 0
+    return Number(draw) ? (draw as number) : 0
   }
 
   all() {

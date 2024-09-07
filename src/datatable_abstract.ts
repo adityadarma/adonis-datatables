@@ -1,4 +1,3 @@
-import { Logger } from '@adonisjs/core/logger'
 import Macroable from '@poppinss/macroable'
 import DatatablesRequest from './utils/request.js'
 import { HttpContext } from '@adonisjs/core/http'
@@ -18,6 +17,7 @@ import { LoggerService } from '@adonisjs/core/types'
 import Str from './utils/string.js'
 import DataProcessor from './processors/data_processor.js'
 import config from '../services/config.js'
+import logger from '@adonisjs/core/services/logger'
 
 export abstract class DataTableAbstract extends Macroable implements DataTable {
   protected ctx!: HttpContext
@@ -26,7 +26,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
 
   protected request!: DatatablesRequest
 
-  protected logger!: Logger
+  protected logger!: LoggerService
 
   protected $columns: Record<string, any> = []
 
@@ -37,7 +37,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     edit: [],
     filter: [],
     order: [],
-    only: null,
+    only: [],
     hidden: [],
     visible: [],
   }
@@ -87,7 +87,8 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     super()
     this.ctx = HttpContext.getOrFail()
     this.request = new DatatablesRequest(this.ctx.request)
-    this.config = new Config(config)
+    this.config = config
+    this.logger = logger
   }
 
   /**
@@ -413,7 +414,9 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
   }
 
   protected async filteredCount(): Promise<number> {
-    return this.$filteredRecords ? this.$filteredRecords : await this.count()
+    const total: number = await this.count()
+
+    return (this.$filteredRecords = this.$filteredRecords ? this.$filteredRecords : total)
   }
 
   protected paginate(): void {
@@ -421,19 +424,6 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
       this.paging()
     }
   }
-
-  // transform($results, $processed): array
-  // {
-  //     if (isset($this->transformer) && class_exists('Yajra\\DataTables\\Transformers\\FractalTransformer')) {
-  //         return app('transformer')->transform(
-  //             $results,
-  //             $this->transformer,
-  //             $this->serializer ?? null
-  //         );
-  //     }
-
-  //     return Helper::transform($processed);
-  // }
 
   protected processResults(results: any, object = false): Record<string, any>[] {
     const processor = new DataProcessor(
@@ -455,8 +445,10 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
       data: data,
     })
 
-    for (const [column, searchPane] of this.$searchPanes.entries()) {
-      output['searchPanes']['options'][column] = searchPane['options']
+    if (this.$searchPanes.length) {
+      for (const [column, searchPane] of this.$searchPanes.entries()) {
+        output['searchPanes']['options'][column] = searchPane['options']
+      }
     }
 
     if (this.config.isDebugging()) {
@@ -494,8 +486,8 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     return this.logger
   }
 
-  setLogger(logger: LoggerService): this {
-    this.logger = logger
+  setLogger(log: LoggerService): this {
+    this.logger = log
 
     return this
   }
