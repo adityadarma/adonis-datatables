@@ -1,9 +1,8 @@
 import { DataTableAbstract } from './datatable_abstract.js'
 import { ModelQueryBuilder } from '@adonisjs/lucid/orm'
 import collect from 'collect.js'
-import { wildcardString, wrap } from './helpers/function.js'
-import Obj from './utils/obj.js'
 import { sprintf } from 'sprintf-js'
+import Helper from './utils/helper.js'
 
 export default class LucidDataTable extends DataTableAbstract {
   protected $nullsLast: boolean = false
@@ -161,7 +160,7 @@ export default class LucidDataTable extends DataTableAbstract {
   }
 
   wrap(column: string) {
-    return wrap(column)
+    return Helper.wrap(column)
   }
 
   protected getColumnSearchKeyword(i: number, raw: boolean = false): string {
@@ -301,7 +300,7 @@ export default class LucidDataTable extends DataTableAbstract {
     }
 
     if (this.config.isWildcard()) {
-      keyword = wildcardString(keyword, '%')
+      keyword = Helper.wildcardString(keyword, '%')
     }
 
     if (this.config.isSmartSearch()) {
@@ -357,7 +356,7 @@ export default class LucidDataTable extends DataTableAbstract {
     return this
   }
 
-  addColumn(name: string, content: any, order = false): this {
+  addColumn(name: string, content: string | ((row: this) => any), order = false): this {
     this.pushToBlacklist(name)
 
     return super.addColumn(name, content, order)
@@ -448,7 +447,7 @@ export default class LucidDataTable extends DataTableAbstract {
     const appends: Record<string, any> = {}
     for (const [key, value] of Object.entries(this.$appends)) {
       if (typeof value === 'function') {
-        appends[key] = Obj.value(value(this.getFilteredQuery()))
+        appends[key] = Helper.value(value(this.getFilteredQuery()))
       } else {
         appends[key] = value
       }

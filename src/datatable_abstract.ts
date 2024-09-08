@@ -3,14 +3,8 @@ import DatatablesRequest from './utils/request.js'
 import { HttpContext } from '@adonisjs/core/http'
 import collect from 'collect.js'
 import { DataTable } from './contracts/datatable.js'
-import {
-  arrayIntersectKey,
-  arrayReplaceRecursive,
-  extractColumnName,
-  wildcardString,
-} from './helpers/function.js'
-import Obj from './utils/obj.js'
-import { arrayMergeRecursive } from './helpers/function.js'
+import { arrayIntersectKey, arrayReplaceRecursive } from './utils/function.js'
+import { arrayMergeRecursive } from './utils/function.js'
 import Config from './utils/config.js'
 import { Exception } from '@adonisjs/core/exceptions'
 import { LoggerService } from '@adonisjs/core/types'
@@ -18,6 +12,7 @@ import Str from './utils/string.js'
 import DataProcessor from './processors/data_processor.js'
 import config from '../services/config.js'
 import logger from '@adonisjs/core/services/logger'
+import Helper from './utils/helper.js'
 
 export abstract class DataTableAbstract extends Macroable implements DataTable {
   protected ctx!: HttpContext
@@ -42,7 +37,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     visible: [],
   }
 
-  protected $extraColumns: string[] = []
+  protected $extraColumns: Record<string, any> = []
 
   protected $totalRecords: number = 0
 
@@ -128,7 +123,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
 
   abstract globalSearch(keyword: string): void
 
-  addColumn(name: string, content: any, order: boolean = false): this {
+  addColumn(name: string, content: string | ((row: this) => any), order: boolean = false): this {
     this.$extraColumns.push(name)
 
     this.$columnDef['append'].push({
@@ -202,14 +197,14 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
   }
 
   makeHidden(attributes: string[] = []): this {
-    const hidden = Obj.get(this.$columnDef, 'hidden', [])
+    const hidden = Helper.get(this.$columnDef, 'hidden', [])
     this.$columnDef['hidden'] = arrayMergeRecursive(hidden, attributes)
 
     return this
   }
 
   makeVisible(attributes: string[] = []): this {
-    const visible = Obj.get(this.$columnDef, 'visible', [])
+    const visible = Helper.get(this.$columnDef, 'visible', [])
     this.$columnDef['visible'] = arrayMergeRecursive(visible, attributes)
 
     return this
@@ -267,14 +262,14 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     if (Array.isArray(key)) {
       this.$appends = key
     } else {
-      this.$appends[key] = Obj.value(value)
+      this.$appends[key] = Helper.value(value)
     }
 
     return this
   }
 
   withQuery(key: string, value: Function): this {
-    this.$appends[key] = Obj.value(value)
+    this.$appends[key] = Helper.value(value)
 
     return this
   }
@@ -330,6 +325,10 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
 
   pushToBlacklist(column: string): this {
     if (!this.isBlacklisted(column)) {
+      if (!this.$columnDef['blacklist']) {
+        this.$columnDef['blacklist'] = []
+      }
+
       this.$columnDef['blacklist'].push(column)
     }
 
@@ -337,13 +336,16 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
   }
 
   protected isBlacklisted(column: string): boolean {
-    const colDef = this.getColumnsDefinition()
+    const columnDef = this.getColumnsDefinition()
 
-    if (colDef['blacklist'].includes(column)) {
+    if (columnDef['blacklist'] && columnDef['blacklist'].includes(column)) {
       return true
     }
 
-    if (colDef['whitelist'] === '*' || colDef['whitelist'].includes(column)) {
+    if (
+      columnDef['whitelist'] === '*' ||
+      (columnDef['whitelist'] && columnDef['whitelist'].includes(column))
+    ) {
       return false
     }
 
@@ -496,7 +498,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     if (this.config.isSmartSearch()) {
       let keyword = `%${value} %}`
       if (this.config.isWildcard()) {
-        keyword = wildcardString(value, '%')
+        keyword = Helper.wildcardString(value, '%')
       }
 
       // remove escaping slash added on js script request
@@ -519,7 +521,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     }
 
     if (Str.contains(column.toUpperCase(), ' AS ')) {
-      column = extractColumnName(column, wantsAlias)
+      column = Helper.extractColumnName(column, wantsAlias)
     }
 
     return column

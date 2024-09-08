@@ -1,7 +1,8 @@
 import lodash from 'lodash'
-import { arrayIncludeIn, e } from '../helpers/function.js'
+import { arrayIncludeIn } from '../utils/function.js'
 import Config from '../utils/config.js'
 import RowProcessor from './row_processor.js'
+import Helper from '../utils/helper.js'
 
 export default class DataProcessor {
   protected $output: Record<string, any>[] = []
@@ -52,18 +53,16 @@ export default class DataProcessor {
     const indexColumn = this.config.get('index_column', 'DT_RowIndex')
 
     for (const row of Object.values(this.$results)) {
-      const data = {
-        ...row.toJSON(),
-        ...{
-          hidden: this.$makeHidden,
-          visible: this.$makeVisible,
-          ignore_getters: this.$ignoreGetters,
-        },
+      const filters: Record<string, any> = {
+        hidden: this.$makeHidden,
+        visible: this.$makeVisible,
+        ignore_getters: this.$ignoreGetters,
       }
+      const data = Helper.convertToObject(row, filters)
 
-      let value = this.addColumns(data, row.toJSON())
-      value = this.editColumns(value, row.toJSON())
-      value = this.setupRowVariables(value, row.toJSON())
+      let value = this.addColumns(data, row)
+      value = this.editColumns(value, row)
+      value = this.setupRowVariables(value, row)
       value = this.selectOnlyNeededColumns(value)
       value = this.removeExcessColumns(value)
 
@@ -79,21 +78,20 @@ export default class DataProcessor {
 
   addColumns(data: Record<string, any>, _row: any): Record<string, any> {
     for (const value of Object.values(this.$appendColumns)) {
-      // const content = value['content']
-      // console.log('content: ', content)
-      // if (content instanceof Formatter) {
-      //     const column = value['name'].replace('_formatted', '')
+      const content = value['content']
 
-      //     value['content'] = content.format(data[column], row);
-      //     if (isset($data[$column])) {
-      //         $value['content'] = $content->format($data[$column], $row);
-      //     }
-      // } else {
-      //     value['content'] = Helper::compileContent($content, $data, $row);
-      // }
+      if (content instanceof Function) {
+        const column = value['name']
+
+        value['content'] = Helper.compileContent(content)
+        if (data[column] !== undefined) {
+          value['content'] = Helper.compileContent(content)
+        }
+      }
 
       data = arrayIncludeIn(value, data)
     }
+    // console.log({ data })
 
     return data
   }
@@ -167,7 +165,7 @@ export default class DataProcessor {
         const columns = this.$escapeColumns.filter((col: any) => !this.$rawColumns.includes(col))
         for (const key of columns) {
           const content = lodash.get(row, key)
-          lodash.set(row, key, e(content))
+          lodash.set(row, key, Helper.escape(content))
         }
       }
 
@@ -190,7 +188,7 @@ export default class DataProcessor {
       if (!rawColumns.includes(key)) {
         const value = lodash.get(arrayDot, key)
         if (lodash.isString(value)) {
-          arrayDot[key] = e(value)
+          arrayDot[key] = Helper.escape(value)
         }
       }
     })
