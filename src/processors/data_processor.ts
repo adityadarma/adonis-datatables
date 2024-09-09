@@ -91,7 +91,6 @@ export default class DataProcessor {
 
       data = arrayIncludeIn(value, data)
     }
-    // console.log({ data })
 
     return data
   }

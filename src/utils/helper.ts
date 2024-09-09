@@ -1,4 +1,6 @@
 import lodash from 'lodash'
+import { Edge } from 'edge.js'
+import app from '@adonisjs/core/services/app'
 
 export default class Helper {
   static toSnakeCase(str: string): string {
@@ -134,7 +136,32 @@ export default class Helper {
     return data
   }
 
-  static compileContent(content: any) {
+  static compileContent(content: any, data: Record<string, any>, row: Record<string, any> | any[]) {
+    if (typeof content === 'string' ) {
+
+    }
+    if (typeof content === 'function') {
+
+    }
+    if (typeof content === 'object') {
+      const [view, data] = Object.entries(a)[0];
+
+    }
+    return content
+  }
+
+  static reflectCallableParameters(content: any, data: any, row: any) {
+
+  }
+
+  static async compileView(content: string, data: Record<string, any>) {
+    if (typeof content === 'object' ) {
+      const edge = Edge.create()
+      app.viewsPath(content)
+
+      return await edge.render(content, data)
+    }
+
     return content
   }
 }

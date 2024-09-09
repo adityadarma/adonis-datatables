@@ -67,6 +67,7 @@
   },
   "dependencies": {
     "collect.js": "^4.36.1",
+    "edge.js": "^6.0.2",
     "lodash": "^4.17.21"
   },
   "peerDependencies": {

@@ -123,7 +123,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
 
   abstract globalSearch(keyword: string): void
 
-  addColumn(name: string, content: string | ((row: this) => any), order: boolean = false): this {
+  addColumn(name: string, content: string | Function, order: boolean = false): this {
     this.$extraColumns.push(name)
 
     this.$columnDef['append'].push({

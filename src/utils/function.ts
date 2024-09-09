@@ -40,7 +40,7 @@ export function arrayMergeRecursive(
   return target
 }
 
-export function arrayIncludeIn(item: any, array: Record<string, any>): Record<string, any> {
+export function objectIncludeIn(item: any, array: Record<string, any>): Record<string, any> {
   const isItemOrderInvalid = (i: { order: number }, a: Record<string, any>) => {
     return i.order >= Object.keys(a).length
   }
