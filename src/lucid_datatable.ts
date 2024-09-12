@@ -159,8 +159,8 @@ export default class LucidDataTable extends DataTableAbstract {
     return this.$columnDef['filter'][columnName] !== undefined
   }
 
-  wrap(column: string) {
-    return Helper.wrap(column)
+  wrapColumn(column: string) {
+    return Helper.wrapColumn(column, true)
   }
 
   protected getColumnSearchKeyword(i: number, raw: boolean = false): string {
@@ -219,7 +219,7 @@ export default class LucidDataTable extends DataTableAbstract {
   }
 
   protected regexColumnSearch(column: string, keyword: string): void {
-    column = this.wrap(column)
+    column = this.wrapColumn(column)
 
     let sql: string = ''
     switch (this.getConnection().driverName) {
@@ -287,7 +287,7 @@ export default class LucidDataTable extends DataTableAbstract {
       }
     }
 
-    return this.wrap(column)
+    return this.wrapColumn(column)
   }
 
   protected prepareKeyword(keyword: string): string {
@@ -356,7 +356,11 @@ export default class LucidDataTable extends DataTableAbstract {
     return this
   }
 
-  addColumn(name: string, content: string | ((row: this) => any), order = false): this {
+  addColumn(
+    name: string,
+    content: (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => any) | any,
+    order = false
+  ): this {
     this.pushToBlacklist(name)
 
     return super.addColumn(name, content, order)
@@ -387,7 +391,7 @@ export default class LucidDataTable extends DataTableAbstract {
           self.applyOrderColumn(column, orderable)
         } else {
           const nullsLastSql = self.getNullsLastSql(column, orderable['direction'])
-          const normalSql = self.wrap(column) + ' ' + orderable['direction']
+          const normalSql = self.wrapColumn(column) + ' ' + orderable['direction']
           const sql = self.$nullsLast ? nullsLastSql : normalSql
           self.query.orderByRaw(sql)
         }

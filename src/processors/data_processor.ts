@@ -1,5 +1,5 @@
 import lodash from 'lodash'
-import { arrayIncludeIn } from '../utils/function.js'
+import { objectIncludeIn } from '../utils/function.js'
 import Config from '../utils/config.js'
 import RowProcessor from './row_processor.js'
 import Helper from '../utils/helper.js'
@@ -76,27 +76,30 @@ export default class DataProcessor {
     return this.escapeColumns(this.$output)
   }
 
-  addColumns(data: Record<string, any>, _row: any): Record<string, any> {
+  addColumns(data: Record<string, any>, row: Record<string, any>): Record<string, any> {
     for (const value of Object.values(this.$appendColumns)) {
       const content = value['content']
 
       if (content instanceof Function) {
         const column = value['name']
 
-        value['content'] = Helper.compileContent(content)
+        value['content'] = Helper.compileContent(content, data, row)
         if (data[column] !== undefined) {
-          value['content'] = Helper.compileContent(content)
+          value['content'] = Helper.compileContent(content, data, row)
         }
       }
 
-      data = arrayIncludeIn(value, data)
+      data = objectIncludeIn(value, data)
     }
 
     return data
   }
 
-  protected editColumns(data: Record<string, any>, _row: any): Record<string, any> {
+  protected editColumns(data: Record<string, any>, row: any): Record<string, any> {
     for (const value of Object.values(this.$editColumns)) {
+      const content = value['content']
+
+      value['content'] = Helper.compileContent(content, data, row)
       lodash.set(data, value['name'], value['content'])
     }
 

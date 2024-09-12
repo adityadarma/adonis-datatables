@@ -1,9 +1,8 @@
 {{{
   exports({ to: app.configPath('datatables.ts') })
 }}}
-import { defineConfig } from '@adityadarma/adonis-datatables/types'
-import LucidDataTable from '@adityadarma/adonis-datatables/lucid_datatable.js'
-import { DatatablesConfig } from '@adityadarma/adonis-datatables/types/datatables.js'
+import { defineConfig } from '@adityadarma/adonis-datatables'
+import LucidDataTable from '@adityadarma/adonis-datatables/lucid_datatable'
 
 const datatablesConfig = defineConfig({
   debug: true,

@@ -65,3 +65,16 @@ export function objectIncludeIn(item: any, array: Record<string, any>): Record<s
 
   return { ...first, [item.name]: item.content, ...last }
 }
+
+export function isEmpty(value: any): boolean {
+  return (
+    value === null ||
+    value === undefined ||
+    value === false ||
+    value === 0 ||
+    value === '' ||
+    value === '0' ||
+    (Array.isArray(value) && value.length === 0) ||
+    (typeof value === 'object' && Object.keys(value).length === 0)
+  )
+}

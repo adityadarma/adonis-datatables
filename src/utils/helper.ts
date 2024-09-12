@@ -1,13 +1,14 @@
 import lodash from 'lodash'
 import { Edge } from 'edge.js'
 import app from '@adonisjs/core/services/app'
+import { existsSync } from 'node:fs'
 
 export default class Helper {
   static toSnakeCase(str: string): string {
     return str.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()
   }
 
-  static wrap(value: string): string {
+  static wrapColumn(value: string, toSnackCase: boolean = true): string {
     if (value.includes(' as ')) {
       const [column, alias] = value.split(' as ')
       return `\`${column.trim()}\` as \`${alias.trim()}\``
@@ -15,7 +16,7 @@ export default class Helper {
 
     return value
       .split('.')
-      .map((segment) => `\`${Helper.toSnakeCase(segment)}\``)
+      .map((segment) => `\`${toSnackCase ? Helper.toSnakeCase(segment) : segment}\``)
       .join('.')
   }
 
@@ -95,8 +96,7 @@ export default class Helper {
 
   static convertToObject(row: any, _filters: Record<string, any>): Record<string, any> {
     if (typeof row['toJSON'] === 'function' && typeof row === 'object') {
-      let data: Record<string, any>
-      data = row.toJSON()
+      let data: Record<string, any> = row.toJSON()
 
       if (typeof row['serializeRelations'] === 'function') {
         for (const [relationName, relation] of Object.entries(row.serializeRelations())) {
@@ -136,32 +136,67 @@ export default class Helper {
     return data
   }
 
-  static compileContent(content: any, data: Record<string, any>, row: Record<string, any> | any[]) {
-    if (typeof content === 'string' ) {
-
+  static compileContent(
+    content: (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => any) | any,
+    data: Record<string, any>,
+    row: Record<string, any> | any[]
+  ) {
+    if (typeof content === 'string') {
+      return Helper.compileView(content, Helper.getMixedValue(data, row))
     }
+
     if (typeof content === 'function') {
-
+      return content(row)
     }
-    if (typeof content === 'object') {
-      const [view, data] = Object.entries(a)[0];
 
-    }
     return content
-  }
-
-  static reflectCallableParameters(content: any, data: any, row: any) {
-
   }
 
   static async compileView(content: string, data: Record<string, any>) {
-    if (typeof content === 'object' ) {
-      const edge = Edge.create()
-      app.viewsPath(content)
+    const edge = Edge.create()
+    if (typeof content === 'object') {
+      if (existsSync(app.viewsPath((content as string).replace('.', '/') + '.edge'))) {
+        app.viewsPath(content)
 
-      return await edge.render(content, data)
+        return await edge.render(content, data)
+      }
     }
 
-    return content
+    edge.renderRawSync(content, data)
+
+    return Helper.escapeHTML(content)
+  }
+
+  static escapeHTML(html: string): string {
+    return html
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+      .replace(/\\/g, '\\\\')
+      .replace(/\n/g, '\\n')
+  }
+
+  static getMixedValue(data: Record<string, any>, param: Record<string, any>): Record<string, any> {
+    const casted = Helper.castToObject(param)
+
+    data['model'] = param
+
+    for (const key of Object.keys(data)) {
+      if (casted[key] !== undefined) {
+        data[key] = casted[key]
+      }
+    }
+
+    return data
+  }
+
+  static castToObject(param: Record<string, any>): Record<string, any> {
+    if (typeof param['toJSON'] === 'function' && typeof param === 'object') {
+      return param.toJSON()
+    }
+
+    return param
   }
 }

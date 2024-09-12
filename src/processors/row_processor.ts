@@ -1,4 +1,6 @@
 import lodash from 'lodash'
+import Helper from '../utils/helper.js'
+import { isEmpty } from '../utils/function.js'
 
 export default class RowProcessor {
   constructor(
@@ -7,11 +9,11 @@ export default class RowProcessor {
   ) {}
 
   rowValue(attribute: string, template: any) {
-    if (template !== undefined) {
+    if (!isEmpty(template)) {
       if (template !== Function && lodash.get(this.data, template)) {
         this.data[attribute] = lodash.get(this.data, template)
       } else {
-        this.data[attribute] = template
+        this.data[attribute] = Helper.compileContent(template, this.data, this.row)
       }
     }
 
@@ -22,7 +24,7 @@ export default class RowProcessor {
     if (template.length) {
       this.data[attribute] = []
       for (const [index, value] of Object.entries(template)) {
-        this.data[attribute][index] = value
+        this.data[attribute][index] = Helper.compileContent(value as any, this.data, this.row)
       }
     }
 

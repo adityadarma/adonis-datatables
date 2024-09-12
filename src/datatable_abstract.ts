@@ -121,9 +121,16 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
    */
   abstract make(dataSupport: boolean): Promise<any>
 
+  /**
+   *  Implement function
+   */
   abstract globalSearch(keyword: string): void
 
-  addColumn(name: string, content: string | Function, order: boolean = false): this {
+  addColumn(
+    name: string,
+    content: (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => any) | any,
+    order: boolean = false
+  ): this {
     this.$extraColumns.push(name)
 
     this.$columnDef['append'].push({
@@ -325,7 +332,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
 
   pushToBlacklist(column: string): this {
     if (!this.isBlacklisted(column)) {
-      if (!this.$columnDef['blacklist']) {
+      if (this.$columnDef['blacklist'] === undefined) {
         this.$columnDef['blacklist'] = []
       }
 
@@ -338,7 +345,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
   protected isBlacklisted(column: string): boolean {
     const columnDef = this.getColumnsDefinition()
 
-    if (columnDef['blacklist'] && columnDef['blacklist'].includes(column)) {
+    if (columnDef['blacklist'].includes(column)) {
       return true
     }
 
