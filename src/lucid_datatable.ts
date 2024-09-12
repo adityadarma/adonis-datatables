@@ -30,13 +30,12 @@ export default class LucidDataTable extends DataTableAbstract {
     return source instanceof ModelQueryBuilder
   }
 
-  async make(dataSupport: boolean = true): Promise<any> {
+  async make(dataSupport: boolean = true): Promise<Record<string, any> | void> {
     try {
       const query = await this.prepareQuery()
       const results = await query.results()
 
       const processed = this.processResults(results, dataSupport)
-      // const data = this.transform(results, processed);
 
       return this.render(processed)
     } catch (error) {
@@ -44,7 +43,7 @@ export default class LucidDataTable extends DataTableAbstract {
     }
   }
 
-  async results(): Promise<any[]> {
+  async results<Result>(): Promise<Result[]> {
     return await this.query.exec()
   }
 
@@ -114,8 +113,6 @@ export default class LucidDataTable extends DataTableAbstract {
     this.columnSearch()
     // this.searchPanesSearch();
 
-    // If no modification between the original query and the filtered one has been made
-    // the filteredRecords equals the totalRecords
     if (!this.$skipTotalRecords && this.query === initialQuery) {
       this.$filteredRecords ??= this.$totalRecords
     } else {
@@ -482,6 +479,19 @@ export default class LucidDataTable extends DataTableAbstract {
 
     super.ordering()
   }
+
+  protected performJoin(table: string, foreign: string, other: string): void
+    {
+        let joins: string[] = [];
+        // const builder = this.getBaseQueryBuilder();
+        // for (builder.joins ?? [] as join) {
+        //     $joins[] = $join->table;
+        // }
+
+        if (! joins.includes(table)) {
+            this.getBaseQueryBuilder().leftJoin(table, foreign, '=', other);
+        }
+    }
 
   protected applyFixedOrderingToQuery(_keyName: string, _orderedKeys: string[]): void {}
 }

@@ -97,10 +97,7 @@ export default class DataProcessor {
 
   protected editColumns(data: Record<string, any>, row: any): Record<string, any> {
     for (const value of Object.values(this.$editColumns)) {
-      const content = value['content']
-
-      value['content'] = Helper.compileContent(content, data, row)
-      lodash.set(data, value['name'], value['content'])
+      lodash.set(data, value['name'], Helper.compileContent(value['content'], data, row))
     }
 
     return data
