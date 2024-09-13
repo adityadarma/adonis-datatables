@@ -5,8 +5,6 @@ export interface DataTable {
 
   totalCount(): Promise<number>
 
-  filter(callback: CallableFunction, globalSearch: boolean): this
-
   filtering(): void
 
   columnSearch(): void
@@ -15,7 +13,5 @@ export interface DataTable {
 
   ordering(): void
 
-  make(dataSupport: boolean): any
-
-  toJson(dataSupport: boolean): any
+  toJson(): Promise<Record<string, any> | void>
 }

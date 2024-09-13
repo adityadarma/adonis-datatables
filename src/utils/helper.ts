@@ -90,11 +90,14 @@ export default class Helper {
       )
   }
 
-  static value(defaultVal: any): any {
-    return typeof defaultVal === 'function' ? defaultVal() : defaultVal
+  static value(
+    defaultVal: <T extends abstract new (...args: any) => any>(arg: InstanceType<T>) => any | any,
+    ...args: any
+  ): any {
+    return typeof defaultVal === 'function' ? defaultVal(args) : defaultVal
   }
 
-  static convertToObject(row: any, _filters: Record<string, any>): Record<string, any> {
+  static convertToObject(row: Record<string, any>): Record<string, any> {
     if (typeof row['toJSON'] === 'function' && typeof row === 'object') {
       let data: Record<string, any> = row.toJSON()
 
@@ -103,13 +106,11 @@ export default class Helper {
           if (Array.isArray(relation)) {
             const items: Record<string, any>[] = []
             for (const relationItem of Object.values(row.$getRelated(relationName))) {
-              items.push(Helper.convertToObject(relationItem, { ignore_getters: true }))
+              items.push(Helper.convertToObject(relationItem as Record<string, any>))
             }
             data[relationName] = items
           } else {
-            data[relationName] = Helper.convertToObject(row.$getRelated(relationName), {
-              ignore_getters: true,
-            })
+            data[relationName] = Helper.convertToObject(row.$getRelated(relationName))
           }
         }
       }
@@ -136,13 +137,16 @@ export default class Helper {
     return data
   }
 
-  static compileContent(
-    content: (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => any) | any,
+  static async compileContent(
+    content:
+      | (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => string | number)
+      | string
+      | number,
     data: Record<string, any>,
     row: Record<string, any> | any[]
   ) {
     if (typeof content === 'string') {
-      return Helper.compileView(content, Helper.getMixedValue(data, row))
+      return await Helper.compileView(content, Helper.getMixedValue(data, row))
     }
 
     if (typeof content === 'function') {

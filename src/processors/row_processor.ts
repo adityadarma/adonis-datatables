@@ -8,23 +8,23 @@ export default class RowProcessor {
     protected row: any
   ) {}
 
-  rowValue(attribute: string, template: any) {
+  async rowValue(attribute: string, template: any) {
     if (!isEmpty(template)) {
-      if (template !== Function && lodash.get(this.data, template)) {
+      if (typeof template !== 'function' && lodash.get(this.data, template)) {
         this.data[attribute] = lodash.get(this.data, template)
       } else {
-        this.data[attribute] = Helper.compileContent(template, this.data, this.row)
+        this.data[attribute] = await Helper.compileContent(template, this.data, this.row)
       }
     }
 
     return this
   }
 
-  rowData(attribute: string, template: any) {
+  async rowData(attribute: string, template: any) {
     if (template.length) {
       this.data[attribute] = []
       for (const [index, value] of Object.entries(template)) {
-        this.data[attribute][index] = Helper.compileContent(value as any, this.data, this.row)
+        this.data[attribute][index] = await Helper.compileContent(value as any, this.data, this.row)
       }
     }
 

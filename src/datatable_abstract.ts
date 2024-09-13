@@ -1,4 +1,3 @@
-import Macroable from '@poppinss/macroable'
 import DatatablesRequest from './utils/request.js'
 import { HttpContext } from '@adonisjs/core/http'
 import collect from 'collect.js'
@@ -14,7 +13,7 @@ import config from '../services/config.js'
 import logger from '@adonisjs/core/services/logger'
 import Helper from './utils/helper.js'
 
-export abstract class DataTableAbstract extends Macroable implements DataTable {
+export abstract class DataTableAbstract implements DataTable {
   protected ctx!: HttpContext
 
   protected config!: Config
@@ -27,7 +26,6 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
 
   protected $columnDef: Record<string, any> = {
     index: false,
-    ignoreGetters: false,
     append: [],
     edit: [],
     filter: [],
@@ -44,10 +42,6 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
   protected $filteredRecords: number = 0
 
   protected $skipTotalRecords: boolean = false
-
-  protected $autoFilter: boolean = true
-
-  protected $filterCallback: any | null = null
 
   protected $templates: Record<string, any> = {
     DT_RowId: '',
@@ -79,7 +73,6 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
   }
 
   constructor() {
-    super()
     this.ctx = HttpContext.getOrFail()
     this.request = new DatatablesRequest(this.ctx.request)
     this.config = config
@@ -90,11 +83,6 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
    *  Implement function
    */
   abstract defaultOrdering(): any
-
-  /**
-   *  Implement function
-   */
-  abstract resolveCallbackParameter(): any
 
   /**
    *  Implement function
@@ -119,7 +107,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
   /**
    *  Implement function
    */
-  abstract make(dataSupport: boolean): Promise<any>
+  abstract toJson(): Promise<Record<string, any> | void>
 
   /**
    *  Implement function
@@ -128,7 +116,10 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
 
   addColumn(
     name: string,
-    content: (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => any) | any,
+    content:
+      | (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => string | number)
+      | string
+      | number,
     order: boolean = false
   ): this {
     this.$extraColumns.push(name)
@@ -144,12 +135,6 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
 
   addIndexColumn(): this {
     this.$columnDef['index'] = true
-
-    return this
-  }
-
-  ignoreGetters(): this {
-    this.$columnDef['ignore_getters'] = true
 
     return this
   }
@@ -275,13 +260,18 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     return this
   }
 
-  withQuery(key: string, value: Function): this {
-    this.$appends[key] = Helper.value(value)
+  withQuery(
+    key: string,
+    callback: <T extends abstract new (...args: any) => any>(row: InstanceType<T>) => string
+  ): this {
+    this.$appends[key] = callback
 
     return this
   }
 
-  order(callback: Function): this {
+  order(
+    callback: <T extends abstract new (...args: any) => any>(row: InstanceType<T>) => any
+  ): this {
     this.$appends = callback
 
     return this
@@ -324,12 +314,6 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     return this
   }
 
-  skipAutoFilter(): this {
-    this.$autoFilter = false
-
-    return this
-  }
-
   pushToBlacklist(column: string): this {
     if (!this.isBlacklisted(column)) {
       if (this.$columnDef['blacklist'] === undefined) {
@@ -360,26 +344,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
   }
 
   ordering(): void {
-    if (this.$orderCallback) {
-      this.$orderCallback.apply(this, this.resolveCallbackParameter())
-    } else {
-      this.defaultOrdering()
-    }
-  }
-
-  filter(callback: Function, globalSearch: boolean = false): this {
-    this.$autoFilter = globalSearch
-    this.$filterCallback = callback
-
-    return this
-  }
-
-  async toJson(options: boolean = false): Promise<any> {
-    if (options && this.config) {
-      this.config.set('json.options', options)
-    }
-
-    return await this.make((options = false))
+    this.defaultOrdering()
   }
 
   async totalCount(): Promise<number> {
@@ -393,12 +358,8 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
   }
 
   protected filterRecords(): void {
-    if (this.$autoFilter && this.request.isSearchable()) {
+    if (this.request.isSearchable()) {
       this.filtering()
-    }
-
-    if (typeof this.$filterCallback === 'function') {
-      this.$filterCallback.apply(this, this.resolveCallbackParameter())
     }
 
     this.columnSearch()
@@ -434,7 +395,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
     }
   }
 
-  protected processResults(results: any, object = false): Record<string, any>[] {
+  protected async processResults(results: any): Promise<Record<string, any>[]> {
     const processor = new DataProcessor(
       results,
       this.getColumnsDefinition(),
@@ -443,7 +404,7 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
       this.config
     )
 
-    return processor.process(object)
+    return await processor.process()
   }
 
   protected render(data: any[]): void {
@@ -508,7 +469,6 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
         keyword = Helper.wildcardString(value, '%')
       }
 
-      // remove escaping slash added on js script request
       return keyword.replace('\\', '%')
     }
 
@@ -522,7 +482,6 @@ export abstract class DataTableAbstract extends Macroable implements DataTable {
       return null
     }
 
-    // DataTables is using make(false)
     if (Number.isInteger(column)) {
       column = this.getColumnNameByIndex(index)
     }

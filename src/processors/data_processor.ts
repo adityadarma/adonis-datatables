@@ -27,8 +27,6 @@ export default class DataProcessor {
 
   protected $includeIndex: boolean = false
 
-  protected $ignoreGetters: boolean = false
-
   constructor(
     protected $results: Record<string, any>,
     columnDef: Record<string, any>,
@@ -45,24 +43,18 @@ export default class DataProcessor {
     this.$rawColumns = columnDef['raw'] ?? []
     this.$makeHidden = columnDef['hidden'] ?? []
     this.$makeVisible = columnDef['visible'] ?? []
-    this.$ignoreGetters = columnDef['ignore_getters'] ?? false
   }
 
-  process(object: boolean = false) {
+  async process() {
     this.$output = []
     const indexColumn = this.config.get('index_column', 'DT_RowIndex')
 
     for (const row of Object.values(this.$results)) {
-      const filters: Record<string, any> = {
-        hidden: this.$makeHidden,
-        visible: this.$makeVisible,
-        ignore_getters: this.$ignoreGetters,
-      }
-      const data = Helper.convertToObject(row, filters)
+      const data = Helper.convertToObject(row)
 
-      let value = this.addColumns(data, row)
-      value = this.editColumns(value, row)
-      value = this.setupRowVariables(value, row)
+      let value = await this.addColumns(data, row)
+      value = await this.editColumns(value, row)
+      value = await this.setupRowVariables(value, row)
       value = this.selectOnlyNeededColumns(value)
       value = this.removeExcessColumns(value)
 
@@ -70,22 +62,23 @@ export default class DataProcessor {
         value[indexColumn] = ++this.start
       }
 
-      this.$output.push(object ? value : this.flatten(value))
+      this.$output.push(value)
     }
 
     return this.escapeColumns(this.$output)
   }
 
-  addColumns(data: Record<string, any>, row: Record<string, any>): Record<string, any> {
+  protected async addColumns(
+    data: Record<string, any>,
+    row: Record<string, any>
+  ): Promise<Record<string, any>> {
     for (const value of Object.values(this.$appendColumns)) {
       const content = value['content']
+      if (typeof content === 'function') {
+        value['content'] = await Helper.compileContent(content, data, row)
 
-      if (content instanceof Function) {
-        const column = value['name']
-
-        value['content'] = Helper.compileContent(content, data, row)
-        if (data[column] !== undefined) {
-          value['content'] = Helper.compileContent(content, data, row)
+        if (content !== undefined) {
+          value['content'] = await Helper.compileContent(content, data, row)
         }
       }
 
@@ -95,26 +88,28 @@ export default class DataProcessor {
     return data
   }
 
-  protected editColumns(data: Record<string, any>, row: any): Record<string, any> {
+  protected async editColumns(data: Record<string, any>, row: any): Promise<Record<string, any>> {
     for (const value of Object.values(this.$editColumns)) {
-      lodash.set(data, value['name'], Helper.compileContent(value['content'], data, row))
+      const content = await Helper.compileContent(value['content'], data, row)
+      lodash.set(data, value['name'], content)
     }
 
     return data
   }
 
-  protected setupRowVariables(
+  protected async setupRowVariables(
     data: Record<string, any>,
     row: Record<string, any>
-  ): Record<string, any> {
-    const processor = new RowProcessor(data, row)
+  ): Promise<Record<string, any>> {
+    let processor = new RowProcessor(data, row)
 
-    return processor
-      .rowValue('DT_RowId', this.templates['DT_RowId'])
-      .rowValue('DT_RowClass', this.templates['DT_RowClass'])
-      .rowData('DT_RowData', this.templates['DT_RowData'])
-      .rowData('DT_RowAttr', this.templates['DT_RowAttr'])
-      .getData()
+    processor = await processor.rowValue('DT_RowId', this.templates['DT_RowId'])
+    processor = await processor.rowValue('DT_RowClass', this.templates['DT_RowClass'])
+    processor = await processor.rowData('DT_RowData', this.templates['DT_RowData'])
+    processor = await processor.rowData('DT_RowAttr', this.templates['DT_RowAttr'])
+    data = processor.getData()
+
+    return data
   }
 
   protected selectOnlyNeededColumns(data: Record<string, any>): Record<string, any> {
@@ -140,17 +135,6 @@ export default class DataProcessor {
   protected removeExcessColumns(data: Record<string, any>): Record<string, any> {
     for (const value of Object.values(data)) {
       lodash.unset(data, value)
-    }
-
-    return data
-  }
-
-  flatten(array: Record<string, any>): Record<string, any> {
-    const data: Record<string, any> = []
-    for (const [key, value] of Object.entries(array)) {
-      if (!data.includes(value)) {
-        data[key] = value
-      }
     }
 
     return data

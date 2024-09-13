@@ -1,5 +1,6 @@
 import { DataTableAbstract } from './datatable_abstract.js'
 import { ModelQueryBuilder } from '@adonisjs/lucid/orm'
+import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import collect from 'collect.js'
 import { sprintf } from 'sprintf-js'
 import Helper from './utils/helper.js'
@@ -9,15 +10,13 @@ export default class LucidDataTable extends DataTableAbstract {
 
   protected $prepared: boolean = false
 
-  protected $limitCallback: Function | null = null
-
   protected $keepSelectBindings: boolean = false
 
   protected $ignoreSelectInCountQuery: boolean = false
 
   protected $disableUserOrdering: boolean = false
 
-  constructor(protected query: ModelQueryBuilder) {
+  constructor(protected query: ModelQueryBuilderContract<LucidModel, any>) {
     super()
     this.$columns = query.columns
   }
@@ -30,12 +29,11 @@ export default class LucidDataTable extends DataTableAbstract {
     return source instanceof ModelQueryBuilder
   }
 
-  async make(dataSupport: boolean = true): Promise<Record<string, any> | void> {
+  async toJson(): Promise<Record<string, any> | void> {
     try {
       const query = await this.prepareQuery()
       const results = await query.results()
-
-      const processed = this.processResults(results, dataSupport)
+      const processed = await this.processResults(results)
 
       return this.render(processed)
     } catch (error) {
@@ -102,12 +100,8 @@ export default class LucidDataTable extends DataTableAbstract {
   filterRecords(): void {
     const initialQuery = this.query.clone()
 
-    if (this.$autoFilter && this.request.isSearchable()) {
+    if (this.request.isSearchable()) {
       this.filtering()
-    }
-
-    if (typeof this.$filterCallback === 'function') {
-      this.$filterCallback.apply(this.resolveCallbackParameter())
     }
 
     this.columnSearch()
@@ -169,12 +163,8 @@ export default class LucidDataTable extends DataTableAbstract {
     return this.setupKeyword(keyword)
   }
 
-  filter(_callback: CallableFunction, _globalSearch: boolean): this {
-    return this
-  }
-
   protected applyFilterColumn(
-    query: ModelQueryBuilder,
+    query: ModelQueryBuilderContract<LucidModel, any>,
     _columnName: string,
     _keyword: string,
     _boolean: string = 'and'
@@ -191,7 +181,9 @@ export default class LucidDataTable extends DataTableAbstract {
     // query.addNestedWhereQuery(baseQueryBuilder, boolean)
   }
 
-  getBaseQueryBuilder(instance: ModelQueryBuilder | null = null): ModelQueryBuilder {
+  getBaseQueryBuilder(
+    instance: ModelQueryBuilderContract<LucidModel, any> | null = null
+  ): ModelQueryBuilderContract<LucidModel, any> {
     if (!instance) {
       instance = this.query
     }
@@ -199,7 +191,7 @@ export default class LucidDataTable extends DataTableAbstract {
     return instance
   }
 
-  getQuery(): ModelQueryBuilder {
+  getQuery(): ModelQueryBuilderContract<LucidModel, any> {
     return this.query
   }
 
@@ -255,7 +247,7 @@ export default class LucidDataTable extends DataTableAbstract {
   }
 
   protected compileQuerySearch(
-    query: ModelQueryBuilder,
+    query: ModelQueryBuilderContract<LucidModel, any>,
     column: string,
     keyword: string,
     boolean: string = 'or'
@@ -271,7 +263,7 @@ export default class LucidDataTable extends DataTableAbstract {
     ;(query as any)[method](sql, [`%${keyword}%`])
   }
 
-  addTablePrefix(query: ModelQueryBuilder, column: string): string {
+  addTablePrefix(query: ModelQueryBuilderContract<LucidModel, any>, column: string): string {
     if (!column.includes('.')) {
       const q = this.getBaseQueryBuilder(query)
       let from: string = q.model.table || ''
@@ -307,7 +299,7 @@ export default class LucidDataTable extends DataTableAbstract {
     return keyword
   }
 
-  filterColumn(column: string, callback: Function): this {
+  filterColumn(column: string, callback: CallableFunction): this {
     this.$columnDef['filter'][column] = { method: callback }
 
     return this
@@ -336,35 +328,22 @@ export default class LucidDataTable extends DataTableAbstract {
   paging(): void {
     const start = this.request.start()
     const length = this.request.length()
-
     const limit = length > 0 ? length : 10
 
-    if (typeof this.$limitCallback === 'function') {
-      this.query.limit(limit)
-      this.$limitCallback.apply(this.query, [this.query])
-    } else {
-      this.query.offset(start).limit(limit)
-    }
-  }
-
-  limit(callback: Function): this {
-    this.$limitCallback = callback
-
-    return this
+    this.query.offset(start).limit(limit)
   }
 
   addColumn(
     name: string,
-    content: (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => any) | any,
+    content:
+      | (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => string | number)
+      | string
+      | number,
     order = false
   ): this {
     this.pushToBlacklist(name)
 
     return super.addColumn(name, content, order)
-  }
-
-  resolveCallbackParameter() {
-    return [this.query]
   }
 
   defaultOrdering(): any {
@@ -460,7 +439,7 @@ export default class LucidDataTable extends DataTableAbstract {
     return { ...data, ...appends }
   }
 
-  getFilteredQuery(): ModelQueryBuilder {
+  getFilteredQuery(): ModelQueryBuilderContract<LucidModel, any> {
     this.prepareQuery()
 
     return this.query
@@ -480,18 +459,17 @@ export default class LucidDataTable extends DataTableAbstract {
     super.ordering()
   }
 
-  protected performJoin(table: string, foreign: string, other: string): void
-    {
-        let joins: string[] = [];
-        // const builder = this.getBaseQueryBuilder();
-        // for (builder.joins ?? [] as join) {
-        //     $joins[] = $join->table;
-        // }
+  protected performJoin(table: string, foreign: string, other: string): void {
+    let joins: string[] = []
+    // const builder = this.getBaseQueryBuilder();
+    // for (builder.joins ?? [] as join) {
+    //     $joins[] = $join->table;
+    // }
 
-        if (! joins.includes(table)) {
-            this.getBaseQueryBuilder().leftJoin(table, foreign, '=', other);
-        }
+    if (!joins.includes(table)) {
+      this.getBaseQueryBuilder().leftJoin(table, foreign, '=', other)
     }
+  }
 
   protected applyFixedOrderingToQuery(_keyName: string, _orderedKeys: string[]): void {}
 }
