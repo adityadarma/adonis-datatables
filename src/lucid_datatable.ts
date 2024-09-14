@@ -4,6 +4,8 @@ import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/mod
 import collect from 'collect.js'
 import { sprintf } from 'sprintf-js'
 import Helper from './utils/helper.js'
+import { lcFirst } from './utils/function.js'
+import { Exception } from '@adonisjs/core/exceptions'
 
 export default class LucidDataTable extends DataTableAbstract {
   protected $nullsLast: boolean = false
@@ -19,6 +21,10 @@ export default class LucidDataTable extends DataTableAbstract {
   constructor(protected query: ModelQueryBuilderContract<LucidModel, any>) {
     super()
     this.$columns = query.columns
+  }
+
+  getPrimaryKeyName(): any {
+    return this.query.model.primaryKey
   }
 
   protected getConnection() {
@@ -196,7 +202,15 @@ export default class LucidDataTable extends DataTableAbstract {
   }
 
   protected resolveRelationColumn(column: string): string {
-    return column
+    const parts = column.split('.')
+    const columnName = parts.pop() as string
+    const relation = parts.join('.')
+
+    if (this.isNotEagerLoaded(relation)) {
+      return column
+    }
+
+    return this.joinEagerLoadedColumn(relation, columnName)
   }
 
   protected compileColumnSearch(i: number, column: string, keyword: string): void {
@@ -248,19 +262,49 @@ export default class LucidDataTable extends DataTableAbstract {
 
   protected compileQuerySearch(
     query: ModelQueryBuilderContract<LucidModel, any>,
-    column: string,
+    columnName: string,
     keyword: string,
     boolean: string = 'or'
   ): void {
-    column = this.addTablePrefix(query, column)
+    const parts = columnName.split('.')
+    const column = parts.pop() as string
+    const relation = parts.join('.')
+
+    if (this.isNotEagerLoaded(relation)) {
+      return this.compileQuerySearchRaw(query, columnName, keyword, boolean)
+    }
+
+    const method: string = lcFirst(`${boolean}WhereHas`)
+    ;(query as any)[method](relation, (model: ModelQueryBuilder) => {
+      this.compileQuerySearchRaw(model, column, keyword, '')
+    })
+  }
+
+  protected compileQuerySearchRaw(
+    query: ModelQueryBuilderContract<LucidModel, any>,
+    columnName: string,
+    keyword: string,
+    boolean: string = 'or'
+  ): void {
+    let column = this.addTablePrefix(query, columnName)
     column = this.castColumn(column)
     let sql = column + ' LIKE ?'
 
     if (this.config.isCaseInsensitive()) {
       sql = 'LOWER(' + column + ') LIKE ?'
     }
-    const method: string = `${boolean}WhereRaw`
+    const method: string = lcFirst(`${boolean}WhereRaw`)
     ;(query as any)[method](sql, [`%${keyword}%`])
+  }
+
+  protected isNotEagerLoaded(relation: string) {
+    return (
+      relation === '' ||
+      !Object.keys(Object.fromEntries(this.query.model['$relationsDefinitions'])).includes(
+        relation
+      ) ||
+      relation === this.query.model.name
+    )
   }
 
   addTablePrefix(query: ModelQueryBuilderContract<LucidModel, any>, column: string): string {
@@ -370,6 +414,7 @@ export default class LucidDataTable extends DataTableAbstract {
           const normalSql = self.wrapColumn(column) + ' ' + orderable['direction']
           const sql = self.$nullsLast ? nullsLastSql : normalSql
           self.query.orderByRaw(sql)
+          console.log(self.query.toQuery())
         }
       })
   }
@@ -459,16 +504,76 @@ export default class LucidDataTable extends DataTableAbstract {
     super.ordering()
   }
 
-  protected performJoin(table: string, foreign: string, other: string): void {
-    let joins: string[] = []
-    // const builder = this.getBaseQueryBuilder();
-    // for (builder.joins ?? [] as join) {
-    //     $joins[] = $join->table;
-    // }
+  protected joinEagerLoadedColumn(relation: string, relationColumn: string) {
+    let tableName: string = ''
+    let foreignKey: string
+    let ownerKey: string
+    let lastQuery = this.query
 
-    if (!joins.includes(table)) {
-      this.getBaseQueryBuilder().leftJoin(table, foreign, '=', other)
+    const relations = relation.split('.')
+    for (const eachRelation of Object.values(relations)) {
+      const model = lastQuery.model.$getRelation(eachRelation)
+      // console.log(model.type, model.relatedModel(), model)
+      switch (true) {
+        // case model instanceof BelongsToMany:
+        // $pivot   = $model->getTable();
+        // $pivotPK = $model->getExistenceCompareKey();
+        // $pivotFK = $model->getQualifiedParentKeyName();
+        // $this->performJoin($pivot, $pivotPK, $pivotFK);
+
+        // $related = $model->getRelated();
+        // $table   = $related->getTable();
+        // $tablePK = $related->getForeignKey();
+        // $foreign = $pivot . '.' . $tablePK;
+        // $other   = $related->getQualifiedKeyName();
+
+        // $lastQuery->addSelect($table . '.' . $relationColumn);
+        // $this->performJoin($table, $foreign, $other);
+
+        // break;
+
+        // case model instanceof HasOneThrough:
+        // $pivot    = explode('.', $model->getQualifiedParentKeyName())[0]; // extract pivot table from key
+        // $pivotPK  = $pivot . '.' . $model->getFirstKeyName();
+        // $pivotFK  = $model->getQualifiedLocalKeyName();
+        // $this->performJoin($pivot, $pivotPK, $pivotFK);
+
+        // $related = $model->getRelated();
+        // $table   = $related->getTable();
+        // $tablePK = $model->getSecondLocalKeyName();
+        // $foreign = $pivot . '.' . $tablePK;
+        // $other   = $related->getQualifiedKeyName();
+
+        // $lastQuery->addSelect($lastQuery->getModel()->getTable().'.*');
+
+        // break;
+
+        case model.type === 'hasOne':
+          tableName = model.relatedModel().table
+          foreignKey = `${tableName}.${model.foreignKeyColumnName}`
+          ownerKey = `${this.query.model.table}.${model.localKeyColumnName}`
+          break
+
+        case model.type === 'belongsTo':
+          tableName = model.relatedModel().table
+          foreignKey = `${this.query.model.table}.${model.foreignKeyColumnName}`
+          ownerKey = `${tableName}.${model.localKeyColumnName}`
+          break
+
+        default:
+          throw new Exception(`Relation ${model} is not yet supported.`)
+      }
+      // console.log(tableName, foreignKey, ownerKey)
+      this.performJoin(tableName, foreignKey, ownerKey)
+
+      lastQuery = this.query
     }
+
+    return `${tableName}.${relationColumn}`
+  }
+
+  protected performJoin(table: string, foreign: string, other: string): void {
+    this.getBaseQueryBuilder().leftJoin(table, foreign, '=', other)
   }
 
   protected applyFixedOrderingToQuery(_keyName: string, _orderedKeys: string[]): void {}

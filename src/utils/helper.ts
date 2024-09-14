@@ -98,7 +98,7 @@ export default class Helper {
   }
 
   static convertToObject(row: Record<string, any>): Record<string, any> {
-    if (typeof row['toJSON'] === 'function' && typeof row === 'object') {
+    if (row && typeof row['toJSON'] === 'function' && typeof row === 'object') {
       let data: Record<string, any> = row.toJSON()
 
       if (typeof row['serializeRelations'] === 'function') {
@@ -119,7 +119,7 @@ export default class Helper {
     }
 
     let data: Record<string, any>
-    console.log(row)
+    // console.log(row)
     data = row
     // row = typeof row == 'object' && (row.makeHidden as Function).apply(row) ? row.makeHidden(Arr::get($filters, 'hidden', [])) : row;
     // $row = is_object($row) && method_exists($row, 'makeVisible') ? $row->makeVisible(Arr::get($filters, 'visible',

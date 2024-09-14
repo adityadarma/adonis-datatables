@@ -78,3 +78,15 @@ export function isEmpty(value: any): boolean {
     (typeof value === 'object' && Object.keys(value).length === 0)
   )
 }
+
+export function lcFirst(string: string) {
+  if (typeof string !== 'string') {
+    return ''
+  }
+
+  if (string.length === 0) {
+    return string
+  }
+
+  return string[0].toLowerCase() + string.slice(1)
+}
