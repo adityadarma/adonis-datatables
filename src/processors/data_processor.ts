@@ -50,7 +50,7 @@ export default class DataProcessor {
     const indexColumn = this.config.get('index_column', 'DT_RowIndex')
 
     for (const row of Object.values(this.$results)) {
-      const data = Helper.convertToObject(row)
+      const data = Helper.serializeToObject(row)
 
       let value = await this.addColumns(data, row)
       value = await this.editColumns(value, row)

@@ -48,7 +48,7 @@ export default class LucidDataTable extends DataTableAbstract {
   }
 
   async results<Result>(): Promise<Result[]> {
-    return await this.query.exec()
+    return await this.query
   }
 
   async prepareQuery(): Promise<this> {
@@ -111,7 +111,6 @@ export default class LucidDataTable extends DataTableAbstract {
     }
 
     this.columnSearch()
-    // this.searchPanesSearch();
 
     if (!this.$skipTotalRecords && this.query === initialQuery) {
       this.$filteredRecords ??= this.$totalRecords
@@ -171,17 +170,16 @@ export default class LucidDataTable extends DataTableAbstract {
 
   protected applyFilterColumn(
     query: ModelQueryBuilderContract<LucidModel, any>,
-    _columnName: string,
-    _keyword: string,
+    columnName: string,
+    keyword: string,
     _boolean: string = 'and'
   ): void {
     query = this.getBaseQueryBuilder(query)
-    // const callback: Function = this.$columnDef['filter'][columnName]['method'];
+    const callback: Function = this.$columnDef['filter'][columnName]['method']
 
-    // const builder = this.query.clone() as ModelQueryBuilder
-    // console.log(builder.toQuery())
+    const builder = this.query.clone() as ModelQueryBuilder
 
-    // callback.apply(builder, keyword);
+    callback(builder, keyword)
 
     // const baseQueryBuilder = this.getBaseQueryBuilder(builder)
     // query.addNestedWhereQuery(baseQueryBuilder, boolean)
@@ -233,7 +231,7 @@ export default class LucidDataTable extends DataTableAbstract {
         break
 
       case 'pgsql':
-        // column = this.castColumn(column);
+        column = this.castColumn(column)
         sql = !this.config.isCaseInsensitive() ? column + ' ~ ?' : column + ' ~* ? '
         break
 
@@ -294,7 +292,7 @@ export default class LucidDataTable extends DataTableAbstract {
       sql = 'LOWER(' + column + ') LIKE ?'
     }
     const method: string = lcFirst(`${boolean}WhereRaw`)
-    ;(query as any)[method](sql, [`%${keyword}%`])
+    ;(query as any)[method](sql, [this.prepareKeyword(keyword)])
   }
 
   protected isNotEagerLoaded(relation: string) {
@@ -343,7 +341,10 @@ export default class LucidDataTable extends DataTableAbstract {
     return keyword
   }
 
-  filterColumn(column: string, callback: CallableFunction): this {
+  filterColumn(
+    column: string,
+    callback: (query: ModelQueryBuilder, keyword: string) => void
+  ): this {
     this.$columnDef['filter'][column] = { method: callback }
 
     return this
@@ -393,7 +394,7 @@ export default class LucidDataTable extends DataTableAbstract {
   defaultOrdering(): any {
     const self = this
     collect(this.request.orderableColumns())
-      .map(function (orderable: Record<string, any>) {
+      .map((orderable: Record<string, any>) => {
         orderable['name'] = self.getColumnName(orderable['column'], true)
 
         return orderable
@@ -402,7 +403,7 @@ export default class LucidDataTable extends DataTableAbstract {
         (orderable: Record<string, any>) =>
           self.isBlacklisted(orderable['name']) && !self.hasOrderColumn(orderable['name'])
       )
-      .each(function (orderable: Record<string, any>) {
+      .each((orderable: Record<string, any>) => {
         const column = self.resolveRelationColumn(orderable['name'])
 
         if (self.hasOrderColumn(orderable['name'])) {
@@ -414,7 +415,6 @@ export default class LucidDataTable extends DataTableAbstract {
           const normalSql = self.wrapColumn(column) + ' ' + orderable['direction']
           const sql = self.$nullsLast ? nullsLastSql : normalSql
           self.query.orderByRaw(sql)
-          console.log(self.query.toQuery())
         }
       })
   }
@@ -449,16 +449,15 @@ export default class LucidDataTable extends DataTableAbstract {
   globalSearch(keyword: string): void {
     const self = this
 
-    const getColumName = (index: number) => super.getColumnName(index)
-    this.query.where(function (query: ModelQueryBuilder) {
+    this.query.where((query: ModelQueryBuilder) => {
       collect(self.request.searchableColumnIndex())
-        .map(getColumName)
+        .map((index: number) => super.getColumnName(index))
         .filter(() => true)
         .reject(
           (column) =>
             self.isBlacklisted(column as string) && !self.hasFilterColumn(column as string)
         )
-        .each(function (column) {
+        .each((column) => {
           if (self.hasFilterColumn(column as string)) {
             self.applyFilterColumn(query, column as string, keyword, 'or')
           } else {
@@ -478,7 +477,6 @@ export default class LucidDataTable extends DataTableAbstract {
       }
     }
 
-    // Set flag to disable ordering
     appends['disableOrdering'] = this.$disableUserOrdering
 
     return { ...data, ...appends }
@@ -513,47 +511,7 @@ export default class LucidDataTable extends DataTableAbstract {
     const relations = relation.split('.')
     for (const eachRelation of Object.values(relations)) {
       const model = lastQuery.model.$getRelation(eachRelation)
-      // console.log(model.type, model.relatedModel(), model)
       switch (true) {
-        // case model instanceof BelongsToMany:
-        // $pivot   = $model->getTable();
-        // $pivotPK = $model->getExistenceCompareKey();
-        // $pivotFK = $model->getQualifiedParentKeyName();
-        // $this->performJoin($pivot, $pivotPK, $pivotFK);
-
-        // $related = $model->getRelated();
-        // $table   = $related->getTable();
-        // $tablePK = $related->getForeignKey();
-        // $foreign = $pivot . '.' . $tablePK;
-        // $other   = $related->getQualifiedKeyName();
-
-        // $lastQuery->addSelect($table . '.' . $relationColumn);
-        // $this->performJoin($table, $foreign, $other);
-
-        // break;
-
-        // case model instanceof HasOneThrough:
-        // $pivot    = explode('.', $model->getQualifiedParentKeyName())[0]; // extract pivot table from key
-        // $pivotPK  = $pivot . '.' . $model->getFirstKeyName();
-        // $pivotFK  = $model->getQualifiedLocalKeyName();
-        // $this->performJoin($pivot, $pivotPK, $pivotFK);
-
-        // $related = $model->getRelated();
-        // $table   = $related->getTable();
-        // $tablePK = $model->getSecondLocalKeyName();
-        // $foreign = $pivot . '.' . $tablePK;
-        // $other   = $related->getQualifiedKeyName();
-
-        // $lastQuery->addSelect($lastQuery->getModel()->getTable().'.*');
-
-        // break;
-
-        case model.type === 'hasOne':
-          tableName = model.relatedModel().table
-          foreignKey = `${tableName}.${model.foreignKeyColumnName}`
-          ownerKey = `${this.query.model.table}.${model.localKeyColumnName}`
-          break
-
         case model.type === 'belongsTo':
           tableName = model.relatedModel().table
           foreignKey = `${this.query.model.table}.${model.foreignKeyColumnName}`
@@ -561,9 +519,8 @@ export default class LucidDataTable extends DataTableAbstract {
           break
 
         default:
-          throw new Exception(`Relation ${model} is not yet supported.`)
+          throw new Exception(`Relation ${eachRelation} is not yet supported.`)
       }
-      // console.log(tableName, foreignKey, ownerKey)
       this.performJoin(tableName, foreignKey, ownerKey)
 
       lastQuery = this.query
