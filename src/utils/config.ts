@@ -41,12 +41,6 @@ export default class Config {
     return Helper.get(this.config, 'search.starts_with', false)
   }
 
-  jsonOptions(): number {
-    const options: number = Helper.get(this.config, 'json.options', 0)
-
-    return options
-  }
-
   jsonHeaders(): Record<string, any> {
     return Helper.get(this.config, 'json.header', {})
   }

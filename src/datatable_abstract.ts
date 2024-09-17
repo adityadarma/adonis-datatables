@@ -369,7 +369,7 @@ export abstract class DataTableAbstract implements DataTable {
   filtering(): void {
     const keyword = this.request.keyword()
     if (this.config.isMultiTerm()) {
-      this.globalSearch(keyword)
+      this.smartGlobalSearch(keyword)
       return
     }
 

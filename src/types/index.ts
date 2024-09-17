@@ -15,7 +15,6 @@ export type DatatablesConfig = {
   columns: Record<string, string | any>
   json: {
     header: Record<string, any>
-    options: boolean
   }
 }
 

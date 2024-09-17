@@ -171,22 +171,16 @@ export default class LucidDataTable extends DataTableAbstract {
   protected applyFilterColumn(
     query: ModelQueryBuilderContract<LucidModel, any>,
     columnName: string,
-    keyword: string,
-    _boolean: string = 'and'
+    keyword: string
   ): void {
     query = this.getBaseQueryBuilder(query)
-    const callback: Function = this.$columnDef['filter'][columnName]['method']
+    const callback = this.$columnDef['filter'][columnName]['method']
 
-    const builder = this.query.clone() as ModelQueryBuilder
-
-    callback(builder, keyword)
-
-    // const baseQueryBuilder = this.getBaseQueryBuilder(builder)
-    // query.addNestedWhereQuery(baseQueryBuilder, boolean)
+    callback(query, keyword)
   }
 
   getBaseQueryBuilder(
-    instance: ModelQueryBuilderContract<LucidModel, any> | null = null
+    instance: ModelQueryBuilderContract<LucidModel, any> | undefined = undefined
   ): ModelQueryBuilderContract<LucidModel, any> {
     if (!instance) {
       instance = this.query
@@ -459,7 +453,7 @@ export default class LucidDataTable extends DataTableAbstract {
         )
         .each((column) => {
           if (self.hasFilterColumn(column as string)) {
-            self.applyFilterColumn(query, column as string, keyword, 'or')
+            self.applyFilterColumn(query, column as string, keyword)
           } else {
             self.compileQuerySearch(query, column as string, keyword)
           }

@@ -28,7 +28,6 @@ const datatablesConfig = defineConfig({
   },
   json: {
     header: [],
-    options: false,
   },
 })
 export default datatablesConfig
@@ -39,5 +38,5 @@ export default datatablesConfig
  * in your application.
  */
 declare module '@adityadarma/adonis-datatables/types' {
-  export interface DatatablesLists extends InferDatatablesProviders<typeof DatatablesConfig> {}
+  export interface DatatablesLists extends InferDatatablesProviders<typeof datatablesConfig> {}
 }

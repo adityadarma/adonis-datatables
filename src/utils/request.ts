@@ -3,6 +3,20 @@ import { Request } from '@adonisjs/http-server'
 export default class DatatablesRequest {
   constructor(protected request: Request) {}
 
+  input(key: string, defaultValue?: any): any {
+    const keys = key.split('.')
+
+    const columns: { [key: string]: any } = this.request.input(keys[0])
+    if (!columns) {
+      return defaultValue
+    }
+
+    keys.shift()
+    const value = keys.reduce((acc, curr) => acc && acc[curr], columns)
+
+    return value
+  }
+
   columns(): string[] {
     return this.request.input('columns')
   }
@@ -12,7 +26,7 @@ export default class DatatablesRequest {
   }
 
   isRegex(index: number): boolean {
-    return this.request.inputNested(`columns.${index}.search.regex`) === 'true'
+    return this.input(`columns.${index}.search.regex`) === 'true'
   }
 
   orderableColumns(): object[] {
@@ -22,9 +36,9 @@ export default class DatatablesRequest {
 
     let orderable: object[] = []
     for (let i = 0; i < this.request.input('order').length; i++) {
-      const orderColumn: number = this.request.inputNested(`order.${i}.column`) as unknown as number
+      const orderColumn: number = this.input(`order.${i}.column`) as unknown as number
 
-      const direction: string = this.request.inputNested(`order.${i}.dir`)
+      const direction: string = this.input(`order.${i}.dir`)
 
       const orderDirection: string = direction && direction.toLowerCase() === 'asc' ? 'asc' : 'desc'
       if (this.isColumnOrderable(orderColumn)) {
@@ -40,7 +54,7 @@ export default class DatatablesRequest {
   }
 
   isColumnOrderable(index: number): boolean {
-    return this.request.inputNested(`columns.${index}.orderable`, 'true') === 'true'
+    return this.input(`columns.${index}.orderable`, 'true') === 'true'
   }
 
   searchableColumnIndex(): number[] {
@@ -57,24 +71,20 @@ export default class DatatablesRequest {
   isColumnSearchable(index: number, columnSearch = true): boolean {
     if (columnSearch) {
       return (
-        (this.request.inputNested(`columns.${index}.searchable`, 'true') === 'true' ||
-          (this.request.inputNested(
-            `columns.${index}.searchable`,
-            'true'
-          ) as unknown as boolean) === true) &&
+        (this.input(`columns.${index}.searchable`, 'true') === 'true' ||
+          (this.input(`columns.${index}.searchable`, 'true') as unknown as boolean) === true) &&
         this.columnKeyword(index) !== ''
       )
     }
 
     return (
-      this.request.inputNested(`columns.${index}.searchable`, 'true') === 'true' ||
-      (this.request.inputNested(`columns.${index}.searchable`, 'true') as unknown as boolean) ===
-        true
+      this.input(`columns.${index}.searchable`, 'true') === 'true' ||
+      (this.input(`columns.${index}.searchable`, 'true') as unknown as boolean) === true
     )
   }
 
   columnKeyword(index: number): string {
-    const keyword: string = this.request.inputNested(`columns.${index}.search.value`) ?? ''
+    const keyword: string = this.input(`columns.${index}.search.value`) ?? ''
 
     return this.prepareKeyword(keyword)
   }
@@ -89,7 +99,7 @@ export default class DatatablesRequest {
   }
 
   keyword(): string {
-    const keyword: string = this.request.inputNested('search.value') ?? ''
+    const keyword: string = this.input('search.value') ?? ''
 
     return this.prepareKeyword(keyword)
   }

@@ -26,8 +26,6 @@ export default class DatatablesProvider {
 
       return new Config(config)
     })
-
-    await import('../src/extensions/request.js')
   }
 
   /**
