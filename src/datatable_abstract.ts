@@ -43,6 +43,10 @@ export abstract class DataTableAbstract implements DataTable {
 
   protected $skipTotalRecords: boolean = false
 
+  protected $autoFilter: boolean = true
+
+  protected $filterCallback: Function | null = null
+
   protected $templates: Record<string, any> = {
     DT_RowId: '',
     DT_RowClass: '',
@@ -113,6 +117,8 @@ export abstract class DataTableAbstract implements DataTable {
    *  Implement function
    */
   abstract globalSearch(keyword: string): void
+
+  protected abstract resolveCallback(): any
 
   addColumn(
     name: string,
@@ -289,6 +295,18 @@ export abstract class DataTableAbstract implements DataTable {
     return this
   }
 
+  smart(state: boolean = true): this {
+    this.config.set('datatables.search.smart', state)
+
+    return this
+  }
+
+  startsWithSearch(state: boolean = true): this {
+    this.config.set('datatables.search.starts_with', state)
+
+    return this
+  }
+
   setTotalRecords(total: number): this {
     this.$totalRecords = total
 
@@ -344,7 +362,12 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   ordering(): void {
-    this.defaultOrdering()
+    if (typeof this.$orderCallback === 'function') {
+      this.$orderCallback(this.resolveCallback())
+      return
+    } else {
+      this.defaultOrdering()
+    }
   }
 
   async totalCount(): Promise<number> {
@@ -359,8 +382,12 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   protected filterRecords(): void {
-    if (this.request.isSearchable()) {
+    if (this.$autoFilter && this.request.isSearchable()) {
       this.filtering()
+    }
+
+    if (typeof this.$filterCallback === 'function') {
+      this.$filterCallback(this.resolveCallback())
     }
 
     this.columnSearch()
@@ -459,6 +486,16 @@ export abstract class DataTableAbstract implements DataTable {
 
   setLogger(log: LoggerService): this {
     this.logger = log
+
+    return this
+  }
+
+  filter(
+    callback: <T extends abstract new (...args: any) => any>(query: InstanceType<T>) => void,
+    globalSearch: boolean = false
+  ): this {
+    this.$autoFilter = globalSearch
+    this.$filterCallback = callback
 
     return this
   }

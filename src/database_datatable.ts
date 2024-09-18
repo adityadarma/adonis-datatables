@@ -75,8 +75,12 @@ export default class DatabaseDataTable extends DataTableAbstract {
   filterRecords(): void {
     const initialQuery = this.query.clone()
 
-    if (this.request.isSearchable()) {
+    if (this.$autoFilter && this.request.isSearchable()) {
       this.filtering()
+    }
+
+    if (typeof this.$filterCallback === 'function') {
+      this.$filterCallback(this.query)
     }
 
     this.columnSearch()
@@ -302,8 +306,18 @@ export default class DatabaseDataTable extends DataTableAbstract {
     return this
   }
 
-  orderColumn(column: string, sql: string, bindings: any[] = []): this {
-    this.$columnDef['order'][column] = [sql, bindings]
+  orderColumn(
+    column: string,
+    sql:
+      | (<T extends abstract new (...args: any) => any>(
+          query: InstanceType<T>,
+          direction: string
+        ) => void)
+      | string
+      | boolean,
+    bindings: any[] = []
+  ): this {
+    this.$columnDef['order'][column] = { sql: sql, bindings: bindings }
 
     return this
   }
@@ -374,7 +388,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
     }
 
     if (typeof sql === 'function') {
-      sql.apply(this.query, orderable['direction'])
+      sql(this.query, orderable['direction'])
     } else {
       sql = sql.replace('$1', orderable['direction'])
       const bindings = this.$columnDef['order'][column]['bindings']
@@ -445,11 +459,10 @@ export default class DatabaseDataTable extends DataTableAbstract {
       return
     }
 
-    if (typeof this.$orderCallback === 'function') {
-      this.$orderCallback(this.query)
-      return
-    }
-
     super.ordering()
+  }
+
+  resolveCallback(): any {
+    return this.query
   }
 }

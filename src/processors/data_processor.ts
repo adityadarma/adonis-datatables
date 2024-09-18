@@ -75,11 +75,7 @@ export default class DataProcessor {
     for (const value of Object.values(this.$appendColumns)) {
       const content = value['content']
       let resultContent = content
-
-      if (typeof content === 'function') {
-        resultContent = await Helper.compileContent(content, data, row)
-      }
-
+      resultContent = await Helper.compileContent(content, data, row)
       data = objectIncludeIn({ ...value, content: resultContent }, data)
     }
 
@@ -88,8 +84,10 @@ export default class DataProcessor {
 
   protected async editColumns(data: Record<string, any>, row: any): Promise<Record<string, any>> {
     for (const value of Object.values(this.$editColumns)) {
-      const content = await Helper.compileContent(value['content'], data, row)
-      lodash.set(data, value['name'], content)
+      const content = value['content']
+      let resultContent = content
+      resultContent = await Helper.compileContent(content, data, row)
+      lodash.set(data, value['name'], resultContent)
     }
 
     return data
