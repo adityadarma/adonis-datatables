@@ -348,7 +348,8 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   async totalCount(): Promise<number> {
-    return this.$totalRecords ? this.$totalRecords : await this.count()
+    const total = await this.count()
+    return this.$totalRecords ? this.$totalRecords : total
   }
 
   editOnlySelectedColumns(): this {
@@ -395,7 +396,7 @@ export abstract class DataTableAbstract implements DataTable {
     }
   }
 
-  protected async processResults(results: any): Promise<Record<string, any>[]> {
+  protected async processResults(results: Record<string, any>[]): Promise<Record<string, any>[]> {
     const processor = new DataProcessor(
       results,
       this.getColumnsDefinition(),

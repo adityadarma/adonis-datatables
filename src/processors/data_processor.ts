@@ -7,28 +7,28 @@ import Helper from '../utils/helper.js'
 export default class DataProcessor {
   protected $output: Record<string, any>[] = []
 
-  protected $appendColumns: Record<string, any> = []
+  protected $appendColumns: Record<string, any>[] = []
 
-  protected $editColumns: Record<string, any> = []
+  protected $editColumns: Record<string, any>[] = []
 
-  protected $rawColumns: Record<string, any> = []
+  protected $rawColumns: string[] = []
 
   protected $exceptions: string[] = ['DT_RowId', 'DT_RowClass', 'DT_RowData', 'DT_RowAttr']
 
-  protected $onlyColumns: Record<string, any> = []
+  protected $onlyColumns: string[] = []
 
-  protected $makeHidden: Record<string, any> = []
+  protected $makeHidden: string[] = []
 
-  protected $makeVisible: Record<string, any> = []
+  protected $makeVisible: string[] = []
 
-  protected $excessColumns: Record<string, any> = []
+  protected $excessColumns: string[] = []
 
   protected $escapeColumns: any = []
 
   protected $includeIndex: boolean = false
 
   constructor(
-    protected $results: Record<string, any>,
+    protected $results: Record<string, any>[],
     columnDef: Record<string, any>,
     protected templates: Record<string, any>,
     protected start: number = 0,
@@ -74,15 +74,13 @@ export default class DataProcessor {
   ): Promise<Record<string, any>> {
     for (const value of Object.values(this.$appendColumns)) {
       const content = value['content']
-      if (typeof content === 'function') {
-        value['content'] = await Helper.compileContent(content, data, row)
+      let resultContent = content
 
-        if (content !== undefined) {
-          value['content'] = await Helper.compileContent(content, data, row)
-        }
+      if (typeof content === 'function') {
+        resultContent = await Helper.compileContent(content, data, row)
       }
 
-      data = objectIncludeIn(value, data)
+      data = objectIncludeIn({ ...value, content: resultContent }, data)
     }
 
     return data

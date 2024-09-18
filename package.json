@@ -21,6 +21,7 @@
     "./datatables_provider": "./build/providers/datatables_provider.js",
     "./datatables": "./build/services/datatables.js",
     "./lucid_datatable": "./build/src/lucid_datatable.js",
+    "./database_datatable": "./build/src/database_datatable.js",
     "./types": "./build/src/types/index.js"
   },
   "scripts": {
