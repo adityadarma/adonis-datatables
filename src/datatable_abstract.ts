@@ -50,7 +50,7 @@ export abstract class DataTableAbstract implements DataTable {
     DT_RowAttr: [],
   }
 
-  protected $orderCallback: any | null = null
+  protected $orderCallback: Function | null = null
 
   protected $skipPaging: boolean = false
 
@@ -262,7 +262,7 @@ export abstract class DataTableAbstract implements DataTable {
 
   withQuery(
     key: string,
-    callback: <T extends abstract new (...args: any) => any>(row: InstanceType<T>) => string
+    callback: <T extends abstract new (...args: any) => any>(query: InstanceType<T>) => string
   ): this {
     this.$appends[key] = callback
 
@@ -270,9 +270,9 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   order(
-    callback: <T extends abstract new (...args: any) => any>(row: InstanceType<T>) => any
+    callback: <T extends abstract new (...args: any) => any>(query: InstanceType<T>) => void
   ): this {
-    this.$appends = callback
+    this.$orderCallback = callback
 
     return this
   }

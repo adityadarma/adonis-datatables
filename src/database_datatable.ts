@@ -445,6 +445,11 @@ export default class DatabaseDataTable extends DataTableAbstract {
       return
     }
 
+    if (typeof this.$orderCallback === 'function') {
+      this.$orderCallback(this.query)
+      return
+    }
+
     super.ordering()
   }
 }
