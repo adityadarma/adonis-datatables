@@ -90,3 +90,24 @@ export function lcFirst(string: string) {
 
   return string[0].toLowerCase() + string.slice(1)
 }
+
+export function strnatcasecmp(a: string, b: string): number {
+  const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
+  return collator.compare(a, b)
+}
+
+export function strnatcmp(a: string, b: string): number {
+  const collator = new Intl.Collator(undefined, { sensitivity: 'variant', numeric: true })
+  return collator.compare(a, b)
+}
+
+export function isNumber(value: any) {
+  try {
+    if (Number.isNaN(value)) {
+      return false
+    }
+    return true
+  } catch (error) {
+    return false
+  }
+}

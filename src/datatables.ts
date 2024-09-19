@@ -1,4 +1,10 @@
 import { Exception } from '@adonisjs/core/exceptions'
+import { ModelQueryBuilder } from '@adonisjs/lucid/orm'
+import { DatabaseQueryBuilder } from '@adonisjs/lucid/database'
+import LucidDataTable from './lucid_datatable.js'
+import DatabaseDataTable from './database_datatable.js'
+import ObjectDataTable from './object_datatable.js'
+import { Collection } from 'collect.js'
 
 export default class Datatables {
   constructor(protected engines: Record<string, any>) {}
@@ -17,5 +23,17 @@ export default class Datatables {
     }
 
     throw new Exception('No available engine run')
+  }
+
+  lucid(source: ModelQueryBuilder) {
+    return new LucidDataTable(source)
+  }
+
+  database(source: DatabaseQueryBuilder) {
+    return new DatabaseDataTable(source)
+  }
+
+  object(source: Collection<any>) {
+    return new ObjectDataTable(source)
   }
 }

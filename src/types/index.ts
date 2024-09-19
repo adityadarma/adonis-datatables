@@ -1,4 +1,6 @@
+import DatabaseDataTable from '../database_datatable.js'
 import LucidDataTable from '../lucid_datatable.js'
+import ObjectDataTable from '../object_datatable.js'
 
 /**
  * Infer the datatables drivers from the user config
@@ -20,5 +22,6 @@ export type DatatablesConfig = {
 
 export type Engines = {
   lucid: LucidDataTable
-  // database: DatabaseDataTable
+  database: DatabaseDataTable
+  object: ObjectDataTable
 }

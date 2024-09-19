@@ -29,12 +29,12 @@ export default class DatatablesRequest {
     return this.input(`columns.${index}.search.regex`) === 'true'
   }
 
-  orderableColumns(): object[] {
+  orderableColumns(): Record<string, any>[] {
     if (!this.isOrderable()) {
       return []
     }
 
-    let orderable: object[] = []
+    let orderable: Record<string, any>[] = []
     for (let i = 0; i < this.request.input('order').length; i++) {
       const orderColumn: number = this.input(`order.${i}.column`) as unknown as number
 

@@ -6,7 +6,6 @@ import { arrayIntersectKey, arrayReplaceRecursive } from './utils/function.js'
 import { arrayMergeRecursive } from './utils/function.js'
 import Config from './utils/config.js'
 import { Exception } from '@adonisjs/core/exceptions'
-import { LoggerService } from '@adonisjs/core/types'
 import Str from './utils/string.js'
 import DataProcessor from './processors/data_processor.js'
 import config from '../services/config.js'
@@ -22,7 +21,7 @@ export abstract class DataTableAbstract implements DataTable {
 
   protected request!: DatatablesRequest
 
-  protected $columns: Record<string, any> = []
+  protected $columns: Record<string, any> = {}
 
   protected $columnDef: Record<string, any> = {
     index: false,
@@ -35,7 +34,7 @@ export abstract class DataTableAbstract implements DataTable {
     visible: [],
   }
 
-  protected $extraColumns: Record<string, any> = []
+  protected $extraColumns: string[] = []
 
   protected $totalRecords: number = 0
 
@@ -61,8 +60,6 @@ export abstract class DataTableAbstract implements DataTable {
   protected $appends: Record<string, any> = {}
 
   protected $serializer: any
-
-  protected $searchPanes: Record<string, any> = {}
 
   protected $transformer: any
 
@@ -115,6 +112,9 @@ export abstract class DataTableAbstract implements DataTable {
    */
   abstract globalSearch(keyword: string): void
 
+  /**
+   *  Implement function
+   */
   protected abstract resolveCallback(): any
 
   setContext(ctx: HttpContext): this {
@@ -456,12 +456,6 @@ export abstract class DataTableAbstract implements DataTable {
       data: data,
     })
 
-    if (this.$searchPanes.length) {
-      for (const [column, searchPane] of this.$searchPanes.entries()) {
-        output['searchPanes']['options'][column] = searchPane['options']
-      }
-    }
-
     if (this.config.isDebugging()) {
       output = this.showDebugger(output)
     }
@@ -493,16 +487,6 @@ export abstract class DataTableAbstract implements DataTable {
     })
   }
 
-  getLogger() {
-    return this.logger
-  }
-
-  setLogger(log: LoggerService): this {
-    this.logger = log
-
-    return this
-  }
-
   filter(
     callback: <T extends abstract new (...args: any) => any>(query: InstanceType<T>) => void,
     globalSearch: boolean = false
@@ -515,7 +499,7 @@ export abstract class DataTableAbstract implements DataTable {
 
   protected setupKeyword(value: string): string {
     if (this.config.isSmartSearch()) {
-      let keyword = `%${value} %}`
+      let keyword = `%${value}%}`
       if (this.config.isWildcard()) {
         keyword = Helper.wildcardString(value, '%')
       }

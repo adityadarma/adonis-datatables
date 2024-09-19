@@ -119,22 +119,7 @@ export default class Helper {
       return data
     }
 
-    let data: Record<string, any>
-    data = row
-    // row = typeof row == 'object' && (row.makeHidden as Function).apply(row) ? row.makeHidden(Arr::get($filters, 'hidden', [])) : row;
-    // $row = is_object($row) && method_exists($row, 'makeVisible') ? $row->makeVisible(Arr::get($filters, 'visible',
-    //     [])) : $row;
-
-    // $data = $row instanceof Arrayable ? $row->toArray() : (array) $row;
-    // foreach ($data as &$value) {
-    //     if ((is_object($value) && ! $value instanceof DateTime) || is_array($value)) {
-    //         $value = self::convertToArray($value);
-    //     }
-
-    //     unset($value);
-    // }
-
-    return data
+    return row
   }
 
   static async compileContent(
@@ -202,5 +187,27 @@ export default class Helper {
     }
 
     return param
+  }
+
+  static dot(object: Record<string, any>, prepend = ''): Record<string, any> {
+    let results: Record<string, any> = {}
+
+    for (const key in object) {
+      if (object.hasOwnProperty(key)) {
+        const value = object[key]
+        if (
+          typeof value === 'object' &&
+          value !== null &&
+          !Array.isArray(value) &&
+          Object.keys(value).length > 0
+        ) {
+          results = { ...results, ...Helper.dot(value, `${prepend}${key}.`) }
+        } else {
+          results[`${prepend}${key}`] = value
+        }
+      }
+    }
+
+    return results
   }
 }
