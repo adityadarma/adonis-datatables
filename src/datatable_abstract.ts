@@ -10,17 +10,17 @@ import { LoggerService } from '@adonisjs/core/types'
 import Str from './utils/string.js'
 import DataProcessor from './processors/data_processor.js'
 import config from '../services/config.js'
-import logger from '@adonisjs/core/services/logger'
 import Helper from './utils/helper.js'
+import type { Logger } from '@adonisjs/logger'
 
 export abstract class DataTableAbstract implements DataTable {
   protected ctx!: HttpContext
 
+  protected logger!: Logger
+
   protected config!: Config
 
   protected request!: DatatablesRequest
-
-  protected logger!: LoggerService
 
   protected $columns: Record<string, any> = []
 
@@ -77,10 +77,7 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   constructor() {
-    this.ctx = HttpContext.getOrFail()
-    this.request = new DatatablesRequest(this.ctx.request)
     this.config = config
-    this.logger = logger
   }
 
   /**
@@ -119,6 +116,22 @@ export abstract class DataTableAbstract implements DataTable {
   abstract globalSearch(keyword: string): void
 
   protected abstract resolveCallback(): any
+
+  setContext(ctx: HttpContext): this {
+    this.ctx = ctx
+    this.request = new DatatablesRequest(this.ctx.request)
+    this.logger = ctx.logger
+
+    return this
+  }
+
+  protected prepareContext(): void {
+    if (!this.ctx) {
+      this.ctx = this.ctx ? this.ctx : HttpContext.getOrFail()
+      this.request = new DatatablesRequest(this.ctx.request)
+      this.logger = this.ctx.logger
+    }
+  }
 
   addColumn(
     name: string,
