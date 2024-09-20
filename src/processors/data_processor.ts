@@ -13,19 +13,19 @@ export default class DataProcessor {
 
   protected $rawColumns: string[] = []
 
-  protected $exceptions: string[] = ['DT_RowId', 'DT_RowClass', 'DT_RowData', 'DT_RowAttr']
+  protected exceptions: string[] = ['DT_RowId', 'DT_RowClass', 'DT_RowData', 'DT_RowAttr']
 
   protected $onlyColumns: string[] = []
 
-  protected $makeHidden: string[] = []
+  protected makeHidden: string[] = []
 
-  protected $makeVisible: string[] = []
+  protected makeVisible: string[] = []
 
   protected $excessColumns: string[] = []
 
   protected $escapeColumns: any = []
 
-  protected $includeIndex: boolean = false
+  protected includeIndex: boolean = false
 
   constructor(
     protected $results: Record<string, any>[],
@@ -39,26 +39,25 @@ export default class DataProcessor {
     this.$excessColumns = columnDef['excess'] ?? []
     this.$onlyColumns = columnDef['only'] ?? []
     this.$escapeColumns = columnDef['escape'] ?? []
-    this.$includeIndex = columnDef['index'] ?? false
+    this.includeIndex = columnDef['index'] ?? false
     this.$rawColumns = columnDef['raw'] ?? []
-    this.$makeHidden = columnDef['hidden'] ?? []
-    this.$makeVisible = columnDef['visible'] ?? []
+    this.makeHidden = columnDef['hidden'] ?? []
+    this.makeVisible = columnDef['visible'] ?? []
   }
 
   async process() {
-    this.$output = []
     const indexColumn = this.config.get('index_column', 'DT_RowIndex')
 
     for (const row of Object.values(this.$results)) {
-      const data = Helper.serializeToObject(row)
+      const data: Record<string, any> = Helper.serializeToObject(row)
 
-      let value = await this.addColumns(data, row)
-      value = await this.editColumns(value, row)
+      let value: Record<string, any> = this.addColumns(data, row)
+      value = this.editColumns(value, row)
       value = await this.setupRowVariables(value, row)
       value = this.selectOnlyNeededColumns(value)
       value = this.removeExcessColumns(value)
 
-      if (this.$includeIndex) {
+      if (this.includeIndex) {
         value[indexColumn] = ++this.start
       }
 
@@ -68,44 +67,37 @@ export default class DataProcessor {
     return this.escapeColumns(this.$output)
   }
 
-  protected async addColumns(
-    data: Record<string, any>,
-    row: Record<string, any>
-  ): Promise<Record<string, any>> {
+  protected addColumns(data: Record<string, any>, row: Record<string, any>): Record<string, any> {
     for (const value of Object.values(this.$appendColumns)) {
       const content = value['content']
-      let resultContent = content
-      resultContent = await Helper.compileContent(content, data, row)
+      const resultContent = Helper.compileContent(content, data, row)
+
       data = objectIncludeIn({ ...value, content: resultContent }, data)
     }
 
     return data
   }
 
-  protected async editColumns(data: Record<string, any>, row: any): Promise<Record<string, any>> {
+  protected editColumns(data: Record<string, any>, row: Record<string, any>): Record<string, any> {
     for (const value of Object.values(this.$editColumns)) {
-      const content = value['content']
-      let resultContent = content
-      resultContent = await Helper.compileContent(content, data, row)
+      const resultContent = Helper.compileContent(value['content'], data, row)
+
       lodash.set(data, value['name'], resultContent)
     }
 
     return data
   }
 
-  protected async setupRowVariables(
+  protected setupRowVariables(
     data: Record<string, any>,
     row: Record<string, any>
-  ): Promise<Record<string, any>> {
-    let processor = new RowProcessor(data, row)
-
-    processor = await processor.rowValue('DT_RowId', this.templates['DT_RowId'])
-    processor = await processor.rowValue('DT_RowClass', this.templates['DT_RowClass'])
-    processor = await processor.rowData('DT_RowData', this.templates['DT_RowData'])
-    processor = await processor.rowData('DT_RowAttr', this.templates['DT_RowAttr'])
-    data = processor.getData()
-
-    return data
+  ): Record<string, any> {
+    return new RowProcessor(data, row)
+      .rowValue('DT_RowId', this.templates['DT_RowId'])
+      .rowValue('DT_RowClass', this.templates['DT_RowClass'])
+      .rowData('DT_RowData', this.templates['DT_RowData'])
+      .rowData('DT_RowAttr', this.templates['DT_RowAttr'])
+      .getData()
   }
 
   protected selectOnlyNeededColumns(data: Record<string, any>): Record<string, any> {
@@ -118,7 +110,7 @@ export default class DataProcessor {
         lodash.set(results, value, lodash.get(data, value))
       }
 
-      for (const value of Object.values(this.$exceptions)) {
+      for (const value of Object.values(this.exceptions)) {
         if (lodash.get(data, value)) {
           lodash.set(results, value, lodash.get(data, value))
         }
@@ -153,7 +145,7 @@ export default class DataProcessor {
   }
 
   protected escapeRow(row: Record<string, any>): Record<string, any> {
-    const rawColumns: string[] = []
+    const rawColumns: string[] = this.$rawColumns
     const arrayDot = lodash.transform(
       row,
       (result: Record<string, any>, value: any, key: string) => {
@@ -166,7 +158,7 @@ export default class DataProcessor {
     Object.keys(arrayDot).forEach((key) => {
       if (!rawColumns.includes(key)) {
         const value = lodash.get(arrayDot, key)
-        if (lodash.isString(value)) {
+        if (lodash.isString(value) || lodash.isElement(value)) {
           arrayDot[key] = Helper.escape(value)
         }
       }

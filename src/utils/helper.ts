@@ -1,7 +1,5 @@
 import lodash from 'lodash'
 import { Edge } from 'edge.js'
-import app from '@adonisjs/core/services/app'
-import { existsSync } from 'node:fs'
 
 export default class Helper {
   static toSnakeCase(str: string): string {
@@ -122,7 +120,7 @@ export default class Helper {
     return row
   }
 
-  static async compileContent(
+  static compileContent(
     content:
       | (<T extends abstract new (...args: any) => any>(row: InstanceType<T>) => string | number)
       | string
@@ -131,7 +129,7 @@ export default class Helper {
     row: Record<string, any> | any[]
   ) {
     if (typeof content === 'string') {
-      return await Helper.compileView(content, Helper.getMixedValue(data, row))
+      return Helper.compileView(content, Helper.getMixedValue(data, row))
     }
 
     if (typeof content === 'function') {
@@ -141,19 +139,10 @@ export default class Helper {
     return content
   }
 
-  static async compileView(content: string, data: Record<string, any>) {
+  static compileView(content: string, data: Record<string, any>) {
     const edge = Edge.create()
-    if (typeof content === 'object') {
-      if (existsSync(app.viewsPath((content as string).replace('.', '/') + '.edge'))) {
-        app.viewsPath(content)
 
-        return await edge.render(content, data)
-      }
-    }
-
-    edge.renderRawSync(content, data)
-
-    return Helper.escapeHTML(content)
+    return edge.renderRawSync(content, data)
   }
 
   static escapeHTML(html: string): string {
@@ -177,6 +166,7 @@ export default class Helper {
         data[key] = casted[key]
       }
     }
+    lodash.unset(data, 'model')
 
     return data
   }

@@ -66,31 +66,6 @@ export function objectIncludeIn(item: any, array: Record<string, any>): Record<s
   return { ...first, [item.name]: item.content, ...last }
 }
 
-export function isEmpty(value: any): boolean {
-  return (
-    value === null ||
-    value === undefined ||
-    value === false ||
-    value === 0 ||
-    value === '' ||
-    value === '0' ||
-    (Array.isArray(value) && value.length === 0) ||
-    (typeof value === 'object' && Object.keys(value).length === 0)
-  )
-}
-
-export function lcFirst(string: string) {
-  if (typeof string !== 'string') {
-    return ''
-  }
-
-  if (string.length === 0) {
-    return string
-  }
-
-  return string[0].toLowerCase() + string.slice(1)
-}
-
 export function strnatcasecmp(a: string, b: string): number {
   const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
   return collator.compare(a, b)
@@ -99,15 +74,4 @@ export function strnatcasecmp(a: string, b: string): number {
 export function strnatcmp(a: string, b: string): number {
   const collator = new Intl.Collator(undefined, { sensitivity: 'variant', numeric: true })
   return collator.compare(a, b)
-}
-
-export function isNumber(value: any) {
-  try {
-    if (Number.isNaN(value)) {
-      return false
-    }
-    return true
-  } catch (error) {
-    return false
-  }
 }

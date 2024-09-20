@@ -1,6 +1,6 @@
 import type { ApplicationService } from '@adonisjs/core/types'
 import Datatables from '../src/datatables.js'
-import { DatatablesConfig, Engines } from '../src/types/index.js'
+import { DatatablesConfig } from '../src/types/index.js'
 import Config from '../src/utils/config.js'
 
 export default class DatatablesProvider {
@@ -16,13 +16,13 @@ export default class DatatablesProvider {
    */
   async boot() {
     this.app.container.bind('datatables', () => {
-      const engines = this.app.config.get<Engines>(`datatables.engines`)
+      const engines: Record<string, any> = this.app.config.get(`datatables.engines`)
 
       return new Datatables(engines)
     })
 
     this.app.container.bind('datatables_config', () => {
-      const config = this.app.config.get<DatatablesConfig>(`datatables`)
+      const config: DatatablesConfig = this.app.config.get(`datatables`)
 
       return new Config(config)
     })

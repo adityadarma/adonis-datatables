@@ -1,13 +1,16 @@
 import collect, { Collection } from 'collect.js'
 import lodash from 'lodash'
-import { DataTableAbstract } from './datatable_abstract.js'
-import Str from './utils/string.js'
+import { DataTableAbstract } from '../datatable_abstract.js'
+import Str from '../utils/string.js'
 
-export default class LucidDataTable extends DataTableAbstract {
+export default class ObjectDataTable extends DataTableAbstract {
   protected $offset: number = 0
 
   constructor(protected collection: Collection<any>) {
     super()
+    if (!(collection instanceof Collection)) {
+      this.collection = new Collection(collection)
+    }
     this.$columns = this.collection.keys()
   }
 
@@ -16,7 +19,7 @@ export default class LucidDataTable extends DataTableAbstract {
   }
 
   static create<T>(this: new (source: any) => T, source: any): T {
-    if (typeof source === 'object') {
+    if (!(source instanceof Collection)) {
       source = new Collection(source)
     }
 
@@ -104,12 +107,12 @@ export default class LucidDataTable extends DataTableAbstract {
     try {
       this.prepareContext()
 
-      this.$totalRecords = await this.totalCount()
+      this.totalRecords = await this.totalCount()
       this.ordering()
       this.filterRecords()
       this.paginate()
 
-      if (this.$totalRecords) {
+      if (this.totalRecords) {
         const results = await this.results()
         const processed = await this.processResults(results)
         const output = lodash.transform(

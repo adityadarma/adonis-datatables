@@ -2,9 +2,9 @@
   exports({ to: app.configPath('datatables.ts') })
 }}}
 import { defineConfig } from '@adityadarma/adonis-datatables'
-import LucidDataTable from '@adityadarma/adonis-datatables/lucid_datatable'
-import DatabaseDataTable from '@adityadarma/adonis-datatables/database_datatable'
-import ObjectDataTable from '@adityadarma/adonis-datatables/object_datatable'
+import LucidDataTable from '@adityadarma/adonis-datatables/engines/lucid_datatable'
+import DatabaseDataTable from '@adityadarma/adonis-datatables/engines/database_datatable'
+import ObjectDataTable from '@adityadarma/adonis-datatables/engines/object_datatable'
 
 const datatablesConfig = defineConfig({
   debug: true,
@@ -33,12 +33,3 @@ const datatablesConfig = defineConfig({
   },
 })
 export default datatablesConfig
-
-
-/**
- * Inferring types for the list of storage you have configured
- * in your application.
- */
-declare module '@adityadarma/adonis-datatables/types' {
-  export interface DatatablesLists extends InferDatatablesProviders<typeof datatablesConfig> {}
-}

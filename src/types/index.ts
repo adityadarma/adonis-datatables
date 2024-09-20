@@ -1,13 +1,20 @@
-import DatabaseDataTable from '../database_datatable.js'
-import LucidDataTable from '../lucid_datatable.js'
-import ObjectDataTable from '../object_datatable.js'
+export interface DataTable {
+  results(): Promise<any[]>
 
-/**
- * Infer the datatables drivers from the user config
- */
-export type InferDatatablesProviders<T extends DatatablesConfig> = T
+  count(): Promise<number>
 
-export interface DatatablesLists {}
+  totalCount(): Promise<number>
+
+  filtering(): void
+
+  columnSearch(): void
+
+  paging(): void
+
+  ordering(): void
+
+  toJson(): Promise<Record<string, any> | void>
+}
 
 export type DatatablesConfig = {
   debug: boolean
@@ -18,10 +25,4 @@ export type DatatablesConfig = {
   json: {
     header: Record<string, any>
   }
-}
-
-export type Engines = {
-  lucid: LucidDataTable
-  database: DatabaseDataTable
-  object: ObjectDataTable
 }

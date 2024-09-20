@@ -1,23 +1,23 @@
-import { DataTableAbstract } from './datatable_abstract.js'
+import { DataTableAbstract } from '../datatable_abstract.js'
 import { DatabaseQueryBuilder } from '@adonisjs/lucid/database'
-import Helper from './utils/helper.js'
+import Helper from '../utils/helper.js'
 import { DatabaseQueryBuilderContract, Dictionary } from '@adonisjs/lucid/types/querybuilder'
 import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
-import { lcFirst } from './utils/function.js'
+import lodash from 'lodash'
 import { ModelQueryBuilder } from '@adonisjs/lucid/orm'
 import collect from 'collect.js'
 import { sprintf } from 'sprintf-js'
 
 export default class DatabaseDataTable extends DataTableAbstract {
-  protected $nullsLast: boolean = false
+  protected nullsLast: boolean = false
 
-  protected $prepared: boolean = false
+  protected prepared: boolean = false
 
-  protected $keepSelectBindings: boolean = false
+  protected keepSelectBindings: boolean = false
 
-  protected $ignoreSelectInCountQuery: boolean = false
+  protected ignoreSelectInCountQuery: boolean = false
 
-  protected $disableUserOrdering: boolean = false
+  protected disableUserOrdering: boolean = false
 
   constructor(
     protected query:
@@ -55,15 +55,15 @@ export default class DatabaseDataTable extends DataTableAbstract {
   }
 
   async prepareQuery(): Promise<this> {
-    if (!this.$prepared) {
-      this.$totalRecords = await this.totalCount()
+    if (!this.prepared) {
+      this.totalRecords = await this.totalCount()
 
       this.filterRecords()
       this.ordering()
       this.paginate()
     }
 
-    this.$prepared = true
+    this.prepared = true
 
     return this
   }
@@ -77,23 +77,23 @@ export default class DatabaseDataTable extends DataTableAbstract {
   filterRecords(): void {
     const initialQuery = this.query.clone()
 
-    if (this.$autoFilter && this.request.isSearchable()) {
+    if (this.autoFilter && this.request.isSearchable()) {
       this.filtering()
     }
 
-    if (typeof this.$filterCallback === 'function') {
-      this.$filterCallback(this.query)
+    if (typeof this.filterCallback === 'function') {
+      this.filterCallback(this.query)
     }
 
     this.columnSearch()
 
     if (!this.$skipTotalRecords && this.query === initialQuery) {
-      this.$filteredRecords ??= this.$totalRecords
+      this.filteredRecords ??= this.totalRecords
     } else {
       this.filteredCount()
 
       if (this.$skipTotalRecords) {
-        this.$totalRecords = this.$filteredRecords
+        this.totalRecords = this.filteredRecords
       }
     }
   }
@@ -245,7 +245,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
     if (this.config.isCaseInsensitive()) {
       sql = 'LOWER(' + column + ') LIKE ?'
     }
-    const method: string = lcFirst(`${boolean}WhereRaw`)
+    const method: string = lodash.lowerFirst(`${boolean}WhereRaw`)
     ;(query as any)[method](sql, [this.prepareKeyword(keyword)])
   }
 
@@ -325,7 +325,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
   }
 
   orderByNullsLast(): this {
-    this.$nullsLast = true
+    this.nullsLast = true
 
     return this
   }
@@ -373,7 +373,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
         } else {
           const nullsLastSql = self.getNullsLastSql(column, orderable['direction'])
           const normalSql = self.wrapColumn(column) + ' ' + orderable['direction']
-          const sql = self.$nullsLast ? nullsLastSql : normalSql
+          const sql = self.nullsLast ? nullsLastSql : normalSql
           self.query.orderByRaw(sql)
         }
       })
@@ -429,7 +429,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
 
   protected attachAppends(data: Record<string, any>): Record<string, any> {
     const appends: Record<string, any> = {}
-    for (const [key, value] of Object.entries(this.$appends)) {
+    for (const [key, value] of Object.entries(this.appends)) {
       if (typeof value === 'function') {
         appends[key] = Helper.value(value(this.getFilteredQuery()))
       } else {
@@ -437,7 +437,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
       }
     }
 
-    appends['disableOrdering'] = this.$disableUserOrdering
+    appends['disableOrdering'] = this.disableUserOrdering
 
     return { ...data, ...appends }
   }
@@ -451,13 +451,13 @@ export default class DatabaseDataTable extends DataTableAbstract {
   }
 
   ignoreSelectsInCountQuery(): this {
-    this.$ignoreSelectInCountQuery = true
+    this.ignoreSelectInCountQuery = true
 
     return this
   }
 
   ordering(): void {
-    if (this.$disableUserOrdering) {
+    if (this.disableUserOrdering) {
       return
     }
 

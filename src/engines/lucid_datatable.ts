@@ -1,6 +1,6 @@
 import { ModelQueryBuilder } from '@adonisjs/lucid/orm'
 import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
-import { lcFirst } from './utils/function.js'
+import lodash from 'lodash'
 import { Exception } from '@adonisjs/core/exceptions'
 import DatabaseDataTable from './database_datatable.js'
 
@@ -37,7 +37,7 @@ export default class LucidDataTable extends DatabaseDataTable {
       return super.compileQuerySearch(query, columnName, keyword, boolean)
     }
 
-    const method: string = lcFirst(`${boolean}WhereHas`)
+    const method: string = lodash.lowerFirst(`${boolean}WhereHas`)
     ;(query as any)[method](relation, (model: ModelQueryBuilder) => {
       super.compileQuerySearch(model, column, keyword, '')
     })

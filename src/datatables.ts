@@ -1,9 +1,9 @@
 import { Exception } from '@adonisjs/core/exceptions'
 import { ModelQueryBuilder } from '@adonisjs/lucid/orm'
 import { DatabaseQueryBuilder } from '@adonisjs/lucid/database'
-import LucidDataTable from './lucid_datatable.js'
-import DatabaseDataTable from './database_datatable.js'
-import ObjectDataTable from './object_datatable.js'
+import LucidDataTable from './engines/lucid_datatable.js'
+import DatabaseDataTable from './engines/database_datatable.js'
+import ObjectDataTable from './engines/object_datatable.js'
 import { Collection } from 'collect.js'
 
 export default class Datatables {
@@ -33,7 +33,7 @@ export default class Datatables {
     return new DatabaseDataTable(source)
   }
 
-  object(source: Collection<any>) {
-    return new ObjectDataTable(source)
+  object(source: Record<string, any>[]) {
+    return new ObjectDataTable(source as unknown as Collection<Record<string, any>>)
   }
 }

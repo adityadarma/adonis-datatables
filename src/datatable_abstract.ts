@@ -1,7 +1,6 @@
 import DatatablesRequest from './utils/request.js'
 import { HttpContext } from '@adonisjs/core/http'
 import collect from 'collect.js'
-import { DataTable } from './contracts/datatable.js'
 import { arrayIntersectKey, arrayReplaceRecursive } from './utils/function.js'
 import { arrayMergeRecursive } from './utils/function.js'
 import Config from './utils/config.js'
@@ -11,6 +10,7 @@ import DataProcessor from './processors/data_processor.js'
 import config from '../services/config.js'
 import Helper from './utils/helper.js'
 import type { Logger } from '@adonisjs/logger'
+import { DataTable } from './types/index.js'
 
 export abstract class DataTableAbstract implements DataTable {
   protected ctx!: HttpContext
@@ -36,15 +36,15 @@ export abstract class DataTableAbstract implements DataTable {
 
   protected $extraColumns: string[] = []
 
-  protected $totalRecords: number = 0
+  protected totalRecords: number = 0
 
-  protected $filteredRecords: number = 0
+  protected filteredRecords: number = 0
 
   protected $skipTotalRecords: boolean = false
 
-  protected $autoFilter: boolean = true
+  protected autoFilter: boolean = true
 
-  protected $filterCallback: Function | null = null
+  protected filterCallback: Function | null = null
 
   protected $templates: Record<string, any> = {
     DT_RowId: '',
@@ -53,15 +53,11 @@ export abstract class DataTableAbstract implements DataTable {
     DT_RowAttr: [],
   }
 
-  protected $orderCallback: Function | null = null
+  protected orderCallback: Function | null = null
 
   protected $skipPaging: boolean = false
 
-  protected $appends: Record<string, any> = {}
-
-  protected $serializer: any
-
-  protected $transformer: any
+  protected appends: Record<string, any> = {}
 
   protected $editOnlySelectedColumns: boolean = false
 
@@ -271,9 +267,9 @@ export abstract class DataTableAbstract implements DataTable {
 
   with(key: any, value: any = ''): this {
     if (Array.isArray(key)) {
-      this.$appends = key
+      this.appends = key
     } else {
-      this.$appends[key] = Helper.value(value)
+      this.appends[key] = Helper.value(value)
     }
 
     return this
@@ -283,7 +279,7 @@ export abstract class DataTableAbstract implements DataTable {
     key: string,
     callback: <T extends abstract new (...args: any) => any>(query: InstanceType<T>) => string
   ): this {
-    this.$appends[key] = callback
+    this.appends[key] = callback
 
     return this
   }
@@ -291,7 +287,7 @@ export abstract class DataTableAbstract implements DataTable {
   order(
     callback: <T extends abstract new (...args: any) => any>(query: InstanceType<T>) => void
   ): this {
-    this.$orderCallback = callback
+    this.orderCallback = callback
 
     return this
   }
@@ -321,20 +317,20 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   setTotalRecords(total: number): this {
-    this.$totalRecords = total
+    this.totalRecords = total
 
     return this
   }
 
   skipTotalRecords(): this {
-    this.$totalRecords = 0
+    this.totalRecords = 0
     this.$skipTotalRecords = true
 
     return this
   }
 
   setFilteredRecords(total: number): this {
-    this.$filteredRecords = total
+    this.filteredRecords = total
 
     return this
   }
@@ -375,8 +371,8 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   ordering(): void {
-    if (typeof this.$orderCallback === 'function') {
-      this.$orderCallback(this.resolveCallback())
+    if (typeof this.orderCallback === 'function') {
+      this.orderCallback(this.resolveCallback())
       return
     } else {
       this.defaultOrdering()
@@ -385,7 +381,7 @@ export abstract class DataTableAbstract implements DataTable {
 
   async totalCount(): Promise<number> {
     const total = await this.count()
-    return this.$totalRecords ? this.$totalRecords : total
+    return this.totalRecords ? this.totalRecords : total
   }
 
   editOnlySelectedColumns(): this {
@@ -395,12 +391,12 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   protected filterRecords(): void {
-    if (this.$autoFilter && this.request.isSearchable()) {
+    if (this.autoFilter && this.request.isSearchable()) {
       this.filtering()
     }
 
-    if (typeof this.$filterCallback === 'function') {
-      this.$filterCallback(this.resolveCallback())
+    if (typeof this.filterCallback === 'function') {
+      this.filterCallback(this.resolveCallback())
     }
 
     this.columnSearch()
@@ -427,7 +423,7 @@ export abstract class DataTableAbstract implements DataTable {
   protected async filteredCount(): Promise<number> {
     const total: number = await this.count()
 
-    return (this.$filteredRecords = this.$filteredRecords ? this.$filteredRecords : total)
+    return (this.filteredRecords = this.filteredRecords ? this.filteredRecords : total)
   }
 
   protected paginate(): void {
@@ -451,8 +447,8 @@ export abstract class DataTableAbstract implements DataTable {
   protected render(data: any[]): void {
     let output = this.attachAppends({
       draw: this.request.draw(),
-      recordsTotal: this.$totalRecords,
-      recordsFiltered: this.$filteredRecords ?? 0,
+      recordsTotal: this.totalRecords,
+      recordsFiltered: this.filteredRecords ?? 0,
       data: data,
     })
 
@@ -468,7 +464,7 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   protected attachAppends(data: Record<string, any>): Record<string, any> {
-    return { ...data, ...this.$appends }
+    return { ...data, ...this.appends }
   }
 
   protected showDebugger(output: Record<string, any>): Record<string, any> {
@@ -480,7 +476,7 @@ export abstract class DataTableAbstract implements DataTable {
   protected errorResponse(exception: Exception) {
     return this.ctx.response.json({
       draw: this.request.draw(),
-      recordsTotal: this.$totalRecords,
+      recordsTotal: this.totalRecords,
       recordsFiltered: 0,
       data: [],
       error: `Exception Message: ${exception.stack}`,
@@ -491,8 +487,8 @@ export abstract class DataTableAbstract implements DataTable {
     callback: <T extends abstract new (...args: any) => any>(query: InstanceType<T>) => void,
     globalSearch: boolean = false
   ): this {
-    this.$autoFilter = globalSearch
-    this.$filterCallback = callback
+    this.autoFilter = globalSearch
+    this.filterCallback = callback
 
     return this
   }
