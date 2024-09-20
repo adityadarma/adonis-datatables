@@ -7,10 +7,10 @@ import Config from './utils/config.js'
 import { Exception } from '@adonisjs/core/exceptions'
 import Str from './utils/string.js'
 import DataProcessor from './processors/data_processor.js'
-import config from '../services/config.js'
 import Helper from './utils/helper.js'
 import type { Logger } from '@adonisjs/logger'
-import { DataTable } from './types/index.js'
+import { DataTable, DatatablesConfig } from './types/index.js'
+import app from '@adonisjs/core/services/app'
 
 export abstract class DataTableAbstract implements DataTable {
   protected ctx!: HttpContext
@@ -70,7 +70,7 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   constructor() {
-    this.config = config
+    this.config = new Config(app.config.get<DatatablesConfig>('datatables'))
   }
 
   /**
