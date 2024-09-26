@@ -121,18 +121,6 @@ export abstract class DataTableAbstract implements DataTable {
     return this
   }
 
-  protected prepareContext(): this {
-    if (!this.ctx) {
-      this.ctx = this.ctx ? this.ctx : HttpContext.getOrFail()
-      this.request = new DatatablesRequest(this.ctx.request)
-      this.logger = this.ctx.logger
-
-      return this
-    }
-
-    throw new Exception('Context not found')
-  }
-
   addColumn(
     name: string,
     content:
