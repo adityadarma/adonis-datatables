@@ -1,6 +1,6 @@
 import app from '@adonisjs/core/services/app'
-import { DatatablesConfig } from '../types/index.js'
-import Helper from './helper.js'
+import { DatatablesConfig } from './types/index.js'
+import lodash from 'lodash'
 
 export default class Config {
   protected config: DatatablesConfig
@@ -10,23 +10,23 @@ export default class Config {
   }
 
   isWildcard(): boolean {
-    return Helper.get(this.config, 'search.use_wildcards', false)
+    return lodash.get(this.config, 'search.use_wildcards', false)
   }
 
   isSmartSearch(): boolean {
-    return Helper.get(this.config, 'search.smart', true)
+    return lodash.get(this.config, 'search.smart', true)
   }
 
   isCaseInsensitive(): boolean {
-    return Helper.get(this.config, 'search.case_insensitive', false)
+    return lodash.get(this.config, 'search.case_insensitive', false)
   }
 
   isDebugging(): boolean {
-    return Helper.get(this.config, 'debug', false)
+    return lodash.get(this.config, 'debug', false)
   }
 
   get(key: string, defaultValue: any = null) {
-    return Helper.get(this.config, key, defaultValue)
+    return lodash.get(this.config, key, defaultValue)
   }
 
   set(key: string, value: any = null) {
@@ -34,14 +34,14 @@ export default class Config {
   }
 
   isMultiTerm(): boolean {
-    return Helper.get(this.config, 'search.multi_term', true)
+    return lodash.get(this.config, 'search.multi_term', true)
   }
 
   isStartsWithSearch(): boolean {
-    return Helper.get(this.config, 'search.starts_with', false)
+    return lodash.get(this.config, 'search.starts_with', false)
   }
 
   jsonHeaders(): Record<string, any> {
-    return Helper.get(this.config, 'json.header', {})
+    return lodash.get(this.config, 'json.header', {})
   }
 }

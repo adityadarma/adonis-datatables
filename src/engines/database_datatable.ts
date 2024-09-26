@@ -4,7 +4,6 @@ import Helper from '../utils/helper.js'
 import { DatabaseQueryBuilderContract, Dictionary } from '@adonisjs/lucid/types/querybuilder'
 import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import lodash from 'lodash'
-import { ModelQueryBuilder } from '@adonisjs/lucid/orm'
 import collect from 'collect.js'
 import { sprintf } from 'sprintf-js'
 
@@ -58,7 +57,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
     if (!this.prepared) {
       this.totalRecords = await this.totalCount()
 
-      this.filterRecords()
+      await this.filterRecords()
       this.ordering()
       this.paginate()
     }
@@ -74,7 +73,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
     return query.total
   }
 
-  filterRecords(): void {
+  async filterRecords(): Promise<void> {
     const initialQuery = this.query.clone()
 
     if (this.autoFilter && this.request.isSearchable()) {
@@ -90,7 +89,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
     if (!this.$skipTotalRecords && this.query === initialQuery) {
       this.filteredRecords ??= this.totalRecords
     } else {
-      this.filteredCount()
+      await this.filteredCount()
 
       if (this.$skipTotalRecords) {
         this.totalRecords = this.filteredRecords
@@ -293,7 +292,10 @@ export default class DatabaseDataTable extends DataTableAbstract {
 
   filterColumn(
     column: string,
-    callback: (query: ModelQueryBuilder, keyword: string) => void
+    callback: <T extends abstract new (...args: any) => any>(
+      query: InstanceType<T>,
+      keyword: string
+    ) => void
   ): this {
     this.$columnDef['filter'][column] = { method: callback }
 

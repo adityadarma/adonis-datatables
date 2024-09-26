@@ -1,6 +1,6 @@
 import lodash from 'lodash'
 import { objectIncludeIn } from '../utils/function.js'
-import Config from '../utils/config.js'
+import Config from '../config.js'
 import RowProcessor from './row_processor.js'
 import Helper from '../utils/helper.js'
 

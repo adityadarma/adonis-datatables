@@ -1,7 +1,7 @@
 import collect, { Collection } from 'collect.js'
 import lodash from 'lodash'
 import { DataTableAbstract } from '../datatable_abstract.js'
-import Str from '../utils/string.js'
+import Helper from '../utils/helper.js'
 
 export default class ObjectDataTable extends DataTableAbstract {
   protected $offset: number = 0
@@ -84,14 +84,14 @@ export default class ObjectDataTable extends DataTableAbstract {
             return new RegExp(keyword, 'i').test(value)
           }
 
-          return Str.contains(value.toLowerCase(), keyword.toLowerCase())
+          return Helper.contains(value.toLowerCase(), keyword.toLowerCase())
         }
 
         if (regex) {
           return new RegExp(keyword).test(value)
         }
 
-        return Str.contains(value, keyword)
+        return Helper.contains(value, keyword)
       })
     }
   }
@@ -146,7 +146,7 @@ export default class ObjectDataTable extends DataTableAbstract {
           value = this.config.isCaseInsensitive() ? value.toLowerCase() : value
         }
 
-        if (Str.contains(value, keyword)) {
+        if (Helper.contains(value, keyword)) {
           return true
         }
       }

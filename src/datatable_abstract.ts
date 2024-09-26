@@ -1,16 +1,16 @@
-import DatatablesRequest from './utils/request.js'
+import DatatablesRequest from './request.js'
 import { HttpContext } from '@adonisjs/core/http'
 import collect from 'collect.js'
 import { arrayIntersectKey, arrayReplaceRecursive } from './utils/function.js'
 import { arrayMergeRecursive } from './utils/function.js'
-import Config from './utils/config.js'
+import Config from './config.js'
 import { Exception } from '@adonisjs/core/exceptions'
-import Str from './utils/string.js'
 import DataProcessor from './processors/data_processor.js'
 import Helper from './utils/helper.js'
 import type { Logger } from '@adonisjs/logger'
 import { DataTable, DatatablesConfig } from './types/index.js'
 import app from '@adonisjs/core/services/app'
+import lodash from 'lodash'
 
 export abstract class DataTableAbstract implements DataTable {
   protected ctx!: HttpContext
@@ -121,12 +121,16 @@ export abstract class DataTableAbstract implements DataTable {
     return this
   }
 
-  protected prepareContext(): void {
+  protected prepareContext(): this {
     if (!this.ctx) {
       this.ctx = this.ctx ? this.ctx : HttpContext.getOrFail()
       this.request = new DatatablesRequest(this.ctx.request)
       this.logger = this.ctx.logger
+
+      return this
     }
+
+    throw new Exception('Context not found')
   }
 
   addColumn(
@@ -204,14 +208,14 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   makeHidden(attributes: string[] = []): this {
-    const hidden = Helper.get(this.$columnDef, 'hidden', [])
+    const hidden = lodash.get(this.$columnDef, 'hidden', [])
     this.$columnDef['hidden'] = arrayMergeRecursive(hidden, attributes)
 
     return this
   }
 
   makeVisible(attributes: string[] = []): this {
-    const visible = Helper.get(this.$columnDef, 'visible', [])
+    const visible = lodash.get(this.$columnDef, 'visible', [])
     this.$columnDef['visible'] = arrayMergeRecursive(visible, attributes)
 
     return this
@@ -517,7 +521,7 @@ export abstract class DataTableAbstract implements DataTable {
       column = this.getColumnNameByIndex(index)
     }
 
-    if (Str.contains(column.toUpperCase(), ' AS ')) {
+    if (Helper.contains(column.toUpperCase(), ' AS ')) {
       column = Helper.extractColumnName(column, wantsAlias)
     }
 

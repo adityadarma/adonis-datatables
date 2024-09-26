@@ -19,8 +19,8 @@ export default class LucidDataTable extends DatabaseDataTable {
 
   async count(): Promise<number> {
     const builder = this.query.clone() as ModelQueryBuilder
-    const query = await builder.count('id as total').first()
-    return query.$extras.total
+    const result = await builder.exec()
+    return result.length
   }
 
   protected compileQuerySearch(

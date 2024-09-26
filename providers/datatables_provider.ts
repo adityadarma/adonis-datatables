@@ -1,6 +1,5 @@
 import type { ApplicationService } from '@adonisjs/core/types'
 import Datatables from '../src/datatables.js'
-import Config from '../src/utils/config.js'
 
 export default class DatatablesProvider {
   constructor(protected app: ApplicationService) {}
@@ -40,6 +39,5 @@ export default class DatatablesProvider {
 declare module '@adonisjs/core/types' {
   export interface ContainerBindings {
     datatables: Datatables
-    datatables_config: Config
   }
 }

@@ -68,14 +68,6 @@ export default class Helper {
     return wild
   }
 
-  static set(obj: Record<string, any>, path: lodash.PropertyPath, value: any = null) {
-    return lodash.set(obj, path, value)
-  }
-
-  static get(obj: Record<string, any>, path: string, defaultValue: any = null): any {
-    return lodash.get(obj, path, defaultValue)
-  }
-
   static only<T>(obj: Record<string, T>, keys: string[]): Record<string, T> {
     return Object.keys(obj)
       .filter((key) => keys.includes(key))
@@ -199,5 +191,31 @@ export default class Helper {
     }
 
     return results
+  }
+
+  static contains(
+    haystack: string,
+    needles: string | string[],
+    ignoreCase: boolean = false
+  ): boolean {
+    if (ignoreCase) {
+      haystack = haystack.toLowerCase()
+    }
+
+    if (!Array.isArray(needles)) {
+      needles = [needles]
+    }
+
+    for (let needle of needles) {
+      if (ignoreCase) {
+        needle = needle.toLowerCase()
+      }
+
+      if (needle !== '' && haystack.includes(needle)) {
+        return true
+      }
+    }
+
+    return false
   }
 }
