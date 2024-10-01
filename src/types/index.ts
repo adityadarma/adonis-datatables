@@ -16,7 +16,7 @@ export interface DataTable {
   toJson(): Promise<Record<string, any> | void>
 }
 
-export type DatatablesConfig = {
+export type Config = {
   debug: boolean
   search: Record<string, boolean>
   index_column: string

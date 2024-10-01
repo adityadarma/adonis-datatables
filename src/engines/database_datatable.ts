@@ -37,6 +37,8 @@ export default class DatabaseDataTable extends DataTableAbstract {
 
   async toJson(): Promise<Record<string, any> | void> {
     try {
+      this.prepareContext()
+
       const query = await this.prepareQuery()
       const results = await query.results()
       const processed = await this.processResults(results)

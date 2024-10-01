@@ -1,4 +1,4 @@
-import DatatablesRequest from './request.js'
+import Request from './request.js'
 import { HttpContext } from '@adonisjs/core/http'
 import collect from 'collect.js'
 import { arrayIntersectKey, arrayReplaceRecursive } from './utils/function.js'
@@ -8,7 +8,7 @@ import { Exception } from '@adonisjs/core/exceptions'
 import DataProcessor from './processors/data_processor.js'
 import Helper from './utils/helper.js'
 import type { Logger } from '@adonisjs/logger'
-import { DataTable, DatatablesConfig } from './types/index.js'
+import { DataTable } from './types/index.js'
 import app from '@adonisjs/core/services/app'
 import lodash from 'lodash'
 
@@ -19,7 +19,7 @@ export abstract class DataTableAbstract implements DataTable {
 
   protected config!: Config
 
-  protected request!: DatatablesRequest
+  protected request!: Request
 
   protected $columns: Record<string, any> = {}
 
@@ -70,7 +70,7 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   constructor() {
-    this.config = new Config(app.config.get<DatatablesConfig>('datatables'))
+    this.config = new Config(app.config.get('datatables'))
   }
 
   /**
@@ -115,10 +115,20 @@ export abstract class DataTableAbstract implements DataTable {
 
   setContext(ctx: HttpContext): this {
     this.ctx = ctx
-    this.request = new DatatablesRequest(this.ctx.request)
+    this.request = new Request(this.ctx.request)
     this.logger = ctx.logger
 
     return this
+  }
+
+  protected prepareContext(): void {
+    if (this.ctx) {
+      return
+    }
+
+    this.ctx = this.ctx ? this.ctx : HttpContext.getOrFail()
+    this.request = new Request(this.ctx.request)
+    this.logger = this.ctx.logger
   }
 
   addColumn(
@@ -466,7 +476,11 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   protected errorResponse(exception: Exception) {
-    return this.ctx.response.json({
+    if (!this.ctx) {
+      return
+    }
+
+    return this.ctx.response.status(500).json({
       draw: this.request.draw(),
       recordsTotal: this.totalRecords,
       recordsFiltered: 0,

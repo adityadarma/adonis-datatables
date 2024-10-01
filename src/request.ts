@@ -1,12 +1,12 @@
-import { Request } from '@adonisjs/http-server'
+import { Request as HttpRequest } from '@adonisjs/core/http'
 
-export default class DatatablesRequest {
-  constructor(protected request: Request) {}
+export default class Request {
+  constructor(protected request: HttpRequest) {}
 
   input(key: string, defaultValue?: any): any {
     const keys = key.split('.')
 
-    const columns: { [key: string]: any } = this.request.input(keys[0])
+    const columns: { [key: string]: any } = this.input(keys[0])
     if (!columns) {
       return defaultValue
     }
@@ -18,11 +18,11 @@ export default class DatatablesRequest {
   }
 
   columns(): string[] {
-    return this.request.input('columns')
+    return this.input('columns')
   }
 
   isSearchable(): boolean {
-    return this.request.input('search.value') !== ''
+    return this.input('search.value') !== ''
   }
 
   isRegex(index: number): boolean {
@@ -35,7 +35,7 @@ export default class DatatablesRequest {
     }
 
     let orderable: Record<string, any>[] = []
-    for (let i = 0; i < this.request.input('order').length; i++) {
+    for (let i = 0; i < this.input('order').length; i++) {
       const orderColumn: number = this.input(`order.${i}.column`) as unknown as number
 
       const direction: string = this.input(`order.${i}.dir`)
@@ -50,7 +50,7 @@ export default class DatatablesRequest {
   }
 
   isOrderable(): boolean {
-    return this.request.input('order') && this.request.input('order').length > 0
+    return this.input('order') && this.input('order').length > 0
   }
 
   isColumnOrderable(index: number): boolean {
@@ -59,7 +59,7 @@ export default class DatatablesRequest {
 
   searchableColumnIndex(): number[] {
     const searchable: number[] = []
-    const columns: object[] = this.request.input('columns')
+    const columns: object[] = this.input('columns')
     for (let index = 0; index < columns.length; index++) {
       if (this.isColumnSearchable(index, false)) {
         searchable.push(index)
@@ -105,37 +105,31 @@ export default class DatatablesRequest {
   }
 
   columnName(index: number): string | undefined {
-    const column: { [key: string]: string } | undefined = this.request.input(`columns.${index}`)
+    const column: { [key: string]: string } | undefined = this.input(`columns.${index}`)
 
     return column && column['name'] && column['name'] !== '' ? column['name'] : column?.['data']
   }
 
   isPaginationable(): boolean {
     return (
-      this.request.input('start') !== null &&
-      this.request.input('length') !== null &&
-      this.request.input('length') !== -1
+      this.input('start') !== null && this.input('length') !== null && this.input('length') !== -1
     )
   }
 
-  getBaseRequest(): Request {
-    return this.request
-  }
-
   start(): number {
-    const start: any = this.request.input('start', 0)
+    const start: any = this.input('start', 0)
 
     return Number(start) ? (start as number) : 0
   }
 
   length(): number {
-    const length: any = this.request.input('length', 0)
+    const length: any = this.input('length', 0)
 
     return Number(length) ? (length as number) : 10
   }
 
   draw(): number {
-    const draw: any = this.request.input('draw', 0)
+    const draw: any = this.input('draw', 0)
 
     return Number(draw) ? (draw as number) : 0
   }

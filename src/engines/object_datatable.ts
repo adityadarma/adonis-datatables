@@ -105,6 +105,8 @@ export default class ObjectDataTable extends DataTableAbstract {
 
   async toJson(): Promise<Record<string, any> | void> {
     try {
+      this.prepareContext()
+
       this.totalRecords = await this.totalCount()
       this.ordering()
       this.filterRecords()
