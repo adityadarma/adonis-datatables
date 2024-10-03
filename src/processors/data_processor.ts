@@ -7,25 +7,21 @@ import Helper from '../utils/helper.js'
 export default class DataProcessor {
   protected $output: Record<string, any>[] = []
 
-  protected $appendColumns: Record<string, any>[] = []
+  protected $appendColumns: Record<string, any> = {}
 
-  protected $editColumns: Record<string, any>[] = []
+  protected $editColumns: Record<string, any> = {}
 
   protected $rawColumns: string[] = []
 
-  protected exceptions: string[] = ['DT_RowId', 'DT_RowClass', 'DT_RowData', 'DT_RowAttr']
-
   protected $onlyColumns: string[] = []
-
-  protected makeHidden: string[] = []
-
-  protected makeVisible: string[] = []
 
   protected $excessColumns: string[] = []
 
   protected $escapeColumns: any = []
 
-  protected includeIndex: boolean = false
+  protected $includeIndex: boolean = false
+
+  protected $exceptions: string[] = ['DT_RowId', 'DT_RowClass', 'DT_RowData', 'DT_RowAttr']
 
   constructor(
     protected $results: Record<string, any>[],
@@ -34,15 +30,13 @@ export default class DataProcessor {
     protected start: number = 0,
     protected config: Config
   ) {
-    this.$appendColumns = columnDef['append'] ?? []
-    this.$editColumns = columnDef['edit'] ?? []
-    this.$excessColumns = columnDef['excess'] ?? []
-    this.$onlyColumns = columnDef['only'] ?? []
-    this.$escapeColumns = columnDef['escape'] ?? []
-    this.includeIndex = columnDef['index'] ?? false
+    this.$appendColumns = columnDef['append'] ?? {}
+    this.$editColumns = columnDef['edit'] ?? {}
     this.$rawColumns = columnDef['raw'] ?? []
-    this.makeHidden = columnDef['hidden'] ?? []
-    this.makeVisible = columnDef['visible'] ?? []
+    this.$onlyColumns = columnDef['only'] ?? []
+    this.$excessColumns = columnDef['excess'] ?? []
+    this.$escapeColumns = columnDef['escape'] ?? []
+    this.$includeIndex = columnDef['index'] ?? false
   }
 
   async process() {
@@ -53,11 +47,11 @@ export default class DataProcessor {
 
       let value: Record<string, any> = this.addColumns(data, row)
       value = this.editColumns(value, row)
-      value = await this.setupRowVariables(value, row)
+      value = this.setupRowVariables(value, row)
       value = this.selectOnlyNeededColumns(value)
       value = this.removeExcessColumns(value)
 
-      if (this.includeIndex) {
+      if (this.$includeIndex) {
         value[indexColumn] = ++this.start
       }
 
@@ -110,7 +104,7 @@ export default class DataProcessor {
         lodash.set(results, value, lodash.get(data, value))
       }
 
-      for (const value of Object.values(this.exceptions)) {
+      for (const value of Object.values(this.$exceptions)) {
         if (lodash.get(data, value)) {
           lodash.set(results, value, lodash.get(data, value))
         }
@@ -121,7 +115,7 @@ export default class DataProcessor {
   }
 
   protected removeExcessColumns(data: Record<string, any>): Record<string, any> {
-    for (const value of Object.values(data)) {
+    for (const value of Object.values(this.$excessColumns)) {
       lodash.unset(data, value)
     }
 

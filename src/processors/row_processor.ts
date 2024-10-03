@@ -7,8 +7,8 @@ export default class RowProcessor {
     protected row: any
   ) {}
 
-  rowValue(attribute: string, template: any) {
-    if (!lodash.isEmpty(template)) {
+  rowValue(attribute: string, template: string) {
+    if (template) {
       if (typeof template !== 'function' && lodash.get(this.data, template)) {
         this.data[attribute] = lodash.get(this.data, template)
       } else {
@@ -19,12 +19,14 @@ export default class RowProcessor {
     return this
   }
 
-  rowData(attribute: string, template: any) {
-    if (template.length) {
-      this.data[attribute] = []
+  rowData(attribute: string, template: Record<string, any>) {
+    if (Object.keys(template).length) {
+      let data: Record<string, any> = {}
       for (const [index, value] of Object.entries(template)) {
-        this.data[attribute][index] = Helper.compileContent(value as any, this.data, this.row)
+        data[index] = Helper.compileContent(value as any, this.data, this.row)
       }
+
+      this.data[attribute] = data
     }
 
     return this

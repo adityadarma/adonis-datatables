@@ -6,7 +6,7 @@ export default class Request {
   input(key: string, defaultValue?: any): any {
     const keys = key.split('.')
 
-    const columns: { [key: string]: any } = this.input(keys[0])
+    const columns: { [key: string]: any } = this.request.input(keys[0])
     if (!columns) {
       return defaultValue
     }

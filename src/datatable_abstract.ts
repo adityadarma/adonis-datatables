@@ -1,21 +1,16 @@
 import Request from './request.js'
 import { HttpContext } from '@adonisjs/core/http'
 import collect from 'collect.js'
-import { arrayIntersectKey, arrayReplaceRecursive } from './utils/function.js'
-import { arrayMergeRecursive } from './utils/function.js'
 import Config from './config.js'
 import { Exception } from '@adonisjs/core/exceptions'
 import DataProcessor from './processors/data_processor.js'
 import Helper from './utils/helper.js'
-import type { Logger } from '@adonisjs/logger'
 import { DataTable } from './types/index.js'
 import app from '@adonisjs/core/services/app'
 import lodash from 'lodash'
 
 export abstract class DataTableAbstract implements DataTable {
   protected ctx!: HttpContext
-
-  protected logger!: Logger
 
   protected config!: Config
 
@@ -30,8 +25,6 @@ export abstract class DataTableAbstract implements DataTable {
     filter: [],
     order: [],
     only: [],
-    hidden: [],
-    visible: [],
   }
 
   protected $extraColumns: string[] = []
@@ -49,8 +42,8 @@ export abstract class DataTableAbstract implements DataTable {
   protected $templates: Record<string, any> = {
     DT_RowId: '',
     DT_RowClass: '',
-    DT_RowData: [],
-    DT_RowAttr: [],
+    DT_RowData: {},
+    DT_RowAttr: {},
   }
 
   protected orderCallback: Function | null = null
@@ -113,14 +106,6 @@ export abstract class DataTableAbstract implements DataTable {
    */
   protected abstract resolveCallback(): any
 
-  setContext(ctx: HttpContext): this {
-    this.ctx = ctx
-    this.request = new Request(this.ctx.request)
-    this.logger = ctx.logger
-
-    return this
-  }
-
   protected prepareContext(): void {
     if (this.ctx) {
       return
@@ -128,7 +113,166 @@ export abstract class DataTableAbstract implements DataTable {
 
     this.ctx = this.ctx ? this.ctx : HttpContext.getOrFail()
     this.request = new Request(this.ctx.request)
-    this.logger = this.ctx.logger
+  }
+
+  async totalCount(): Promise<number> {
+    const total = await this.count()
+    return this.totalRecords ? this.totalRecords : total
+  }
+
+  protected isBlacklisted(column: string): boolean {
+    const columnDef = this.getColumnsDefinition()
+
+    if (columnDef['blacklist'].includes(column)) {
+      return true
+    }
+
+    if (
+      columnDef['whitelist'] === '*' ||
+      (columnDef['whitelist'] && columnDef['whitelist'].includes(column))
+    ) {
+      return false
+    }
+
+    return true
+  }
+
+  protected filterRecords(): void {
+    if (this.autoFilter && this.request.isSearchable()) {
+      this.filtering()
+    }
+
+    if (typeof this.filterCallback === 'function') {
+      this.filterCallback(this.resolveCallback())
+    }
+
+    this.columnSearch()
+    this.filteredCount()
+  }
+
+  protected smartGlobalSearch(keyword: string): void {
+    const self = this
+    collect(keyword.split(' '))
+      .reject((text) => text.trim() === '')
+      .each((text) => self.globalSearch(text))
+  }
+
+  protected async filteredCount(): Promise<number> {
+    const total: number = await this.count()
+
+    return (this.filteredRecords = this.filteredRecords ? this.filteredRecords : total)
+  }
+
+  protected paginate(): void {
+    if (this.request.isPaginationable() && !this.$skipPaging) {
+      this.paging()
+    }
+  }
+
+  protected async processResults(results: Record<string, any>[]): Promise<Record<string, any>[]> {
+    const processor = new DataProcessor(
+      results,
+      this.getColumnsDefinition(),
+      this.$templates,
+      this.request.start(),
+      this.config
+    )
+
+    return await processor.process()
+  }
+
+  protected render(data: any[]): void {
+    let output = this.attachAppends({
+      draw: this.request.draw(),
+      recordsTotal: this.totalRecords,
+      recordsFiltered: this.filteredRecords ?? 0,
+      data: data,
+    })
+
+    if (this.config.isDebugging()) {
+      output = this.showDebugger(output)
+    }
+
+    const response = this.ctx.response.status(200)
+    for (const [key, value] of this.config.jsonHeaders().entries()) {
+      response.append(key, value)
+    }
+    return response.json(output)
+  }
+
+  protected attachAppends(data: Record<string, any>): Record<string, any> {
+    return { ...data, ...this.appends }
+  }
+
+  protected showDebugger(output: Record<string, any>): Record<string, any> {
+    output['input'] = this.request.all()
+
+    return output
+  }
+
+  protected errorResponse(exception: Exception) {
+    if (!this.ctx) {
+      return
+    }
+
+    return this.ctx.response.status(500).json({
+      draw: this.request.draw(),
+      recordsTotal: this.totalRecords,
+      recordsFiltered: 0,
+      data: [],
+      error: `Exception Message: ${exception.stack}`,
+    })
+  }
+
+  protected setupKeyword(value: string): string {
+    if (this.config.isSmartSearch()) {
+      let keyword = `%${value}%}`
+      if (this.config.isWildcard()) {
+        keyword = Helper.wildcardString(value, '%')
+      }
+
+      return keyword.replace('\\', '%')
+    }
+
+    return value
+  }
+
+  protected getColumnName(index: number, wantsAlias: boolean = false): string | null {
+    let column = this.request.columnName(index)
+
+    if (column === null || column === undefined) {
+      return null
+    }
+
+    if (Number.isInteger(column)) {
+      column = this.getColumnNameByIndex(index)
+    }
+
+    if (Helper.contains(column.toUpperCase(), ' AS ')) {
+      column = Helper.extractColumnName(column, wantsAlias)
+    }
+
+    return column
+  }
+
+  protected getColumnNameByIndex(index: number): string {
+    const name =
+      this.$columns[index] !== undefined && this.$columns[index] !== '*'
+        ? this.$columns[index]
+        : this.getPrimaryKeyName()
+
+    return this.$extraColumns.includes(name) ? this.getPrimaryKeyName() : name
+  }
+
+  protected getPrimaryKeyName(): string {
+    return 'id'
+  }
+
+  setContext(ctx: HttpContext): this {
+    this.ctx = ctx
+    this.request = new Request(this.ctx.request)
+
+    return this
   }
 
   addColumn(
@@ -190,7 +334,8 @@ export abstract class DataTableAbstract implements DataTable {
     const datatableColumns = this.config.get('columns') as any[]
     const allowed = ['excess', 'escape', 'raw', 'blacklist', 'whitelist']
 
-    return arrayReplaceRecursive(arrayIntersectKey(datatableColumns, allowed), this.$columnDef)
+    const intersectedKeys = lodash.intersection(Object.keys(datatableColumns), allowed)
+    return lodash.pick(datatableColumns, intersectedKeys)
   }
 
   only(columns: string[] = []): this {
@@ -201,20 +346,6 @@ export abstract class DataTableAbstract implements DataTable {
 
   escapeColumns(columns: string = '*'): this {
     this.$columnDef['escape'] = columns
-
-    return this
-  }
-
-  makeHidden(attributes: string[] = []): this {
-    const hidden = lodash.get(this.$columnDef, 'hidden', [])
-    this.$columnDef['hidden'] = arrayMergeRecursive(hidden, attributes)
-
-    return this
-  }
-
-  makeVisible(attributes: string[] = []): this {
-    const visible = lodash.get(this.$columnDef, 'visible', [])
-    this.$columnDef['visible'] = arrayMergeRecursive(visible, attributes)
 
     return this
   }
@@ -231,37 +362,67 @@ export abstract class DataTableAbstract implements DataTable {
     return this
   }
 
-  setRowClass(content: any): this {
+  setRowClass(
+    content:
+      | (<T extends abstract new (...args: any) => any>(query: InstanceType<T>) => string | number)
+      | string
+  ): this {
     this.$templates['DT_RowClass'] = content
 
     return this
   }
 
-  setRowId(content: string): this {
+  setRowId(
+    content:
+      | (<T extends abstract new (...args: any) => any>(query: InstanceType<T>) => string | number)
+      | string
+  ): this {
     this.$templates['DT_RowId'] = content
 
     return this
   }
 
-  setRowData(data: string): this {
+  setRowData(
+    data: Record<
+      string,
+      (<T extends abstract new (...args: any) => any>(query: InstanceType<T>) => string) | string
+    >
+  ): this {
     this.$templates['DT_RowData'] = data
 
     return this
   }
 
-  addRowData(key: string, value: any): this {
+  addRowData(
+    key: string,
+    value:
+      | (<T extends abstract new (...args: any) => any>(query: InstanceType<T>) => string)
+      | string
+  ): this {
     this.$templates['DT_RowData'][key] = value
 
     return this
   }
 
-  setRowAttr(data: any[]): this {
+  setRowAttr(
+    data: Record<
+      string,
+      | (<T extends abstract new (...args: any) => any>(query: InstanceType<T>) => string | number)
+      | string
+      | number
+    >
+  ): this {
     this.$templates['DT_RowAttr'] = data
 
     return this
   }
 
-  addRowAttr(key: string, value: any): this {
+  addRowAttr(
+    key: string,
+    value:
+      | (<T extends abstract new (...args: any) => any>(query: InstanceType<T>) => string | number)
+      | string
+  ): this {
     this.$templates['DT_RowAttr'][key] = value
 
     return this
@@ -355,21 +516,20 @@ export abstract class DataTableAbstract implements DataTable {
     return this
   }
 
-  protected isBlacklisted(column: string): boolean {
-    const columnDef = this.getColumnsDefinition()
-
-    if (columnDef['blacklist'].includes(column)) {
-      return true
+  filtering(): void {
+    const keyword = this.request.keyword()
+    if (this.config.isMultiTerm()) {
+      this.smartGlobalSearch(keyword)
+      return
     }
 
-    if (
-      columnDef['whitelist'] === '*' ||
-      (columnDef['whitelist'] && columnDef['whitelist'].includes(column))
-    ) {
-      return false
-    }
+    this.globalSearch(keyword)
+  }
 
-    return true
+  editOnlySelectedColumns(): this {
+    this.$editOnlySelectedColumns = true
+
+    return this
   }
 
   ordering(): void {
@@ -381,165 +541,13 @@ export abstract class DataTableAbstract implements DataTable {
     }
   }
 
-  async totalCount(): Promise<number> {
-    const total = await this.count()
-    return this.totalRecords ? this.totalRecords : total
-  }
-
-  editOnlySelectedColumns(): this {
-    this.$editOnlySelectedColumns = true
-
-    return this
-  }
-
-  protected filterRecords(): void {
-    if (this.autoFilter && this.request.isSearchable()) {
-      this.filtering()
-    }
-
-    if (typeof this.filterCallback === 'function') {
-      this.filterCallback(this.resolveCallback())
-    }
-
-    this.columnSearch()
-    this.filteredCount()
-  }
-
-  filtering(): void {
-    const keyword = this.request.keyword()
-    if (this.config.isMultiTerm()) {
-      this.smartGlobalSearch(keyword)
-      return
-    }
-
-    this.globalSearch(keyword)
-  }
-
-  protected smartGlobalSearch(keyword: string): void {
-    const self = this
-    collect(keyword.split(' '))
-      .reject((text) => text.trim() === '')
-      .each((text) => self.globalSearch(text))
-  }
-
-  protected async filteredCount(): Promise<number> {
-    const total: number = await this.count()
-
-    return (this.filteredRecords = this.filteredRecords ? this.filteredRecords : total)
-  }
-
-  protected paginate(): void {
-    if (this.request.isPaginationable() && !this.$skipPaging) {
-      this.paging()
-    }
-  }
-
-  protected async processResults(results: Record<string, any>[]): Promise<Record<string, any>[]> {
-    const processor = new DataProcessor(
-      results,
-      this.getColumnsDefinition(),
-      this.$templates,
-      this.request.start(),
-      this.config
-    )
-
-    return await processor.process()
-  }
-
-  protected render(data: any[]): void {
-    let output = this.attachAppends({
-      draw: this.request.draw(),
-      recordsTotal: this.totalRecords,
-      recordsFiltered: this.filteredRecords ?? 0,
-      data: data,
-    })
-
-    if (this.config.isDebugging()) {
-      output = this.showDebugger(output)
-    }
-
-    const response = this.ctx.response.status(200)
-    for (const [key, value] of this.config.jsonHeaders().entries()) {
-      response.append(key, value)
-    }
-    return response.json(output)
-  }
-
-  protected attachAppends(data: Record<string, any>): Record<string, any> {
-    return { ...data, ...this.appends }
-  }
-
-  protected showDebugger(output: Record<string, any>): Record<string, any> {
-    output['input'] = this.request.all()
-
-    return output
-  }
-
-  protected errorResponse(exception: Exception) {
-    if (!this.ctx) {
-      return
-    }
-
-    return this.ctx.response.status(500).json({
-      draw: this.request.draw(),
-      recordsTotal: this.totalRecords,
-      recordsFiltered: 0,
-      data: [],
-      error: `Exception Message: ${exception.stack}`,
-    })
-  }
-
   filter(
     callback: <T extends abstract new (...args: any) => any>(query: InstanceType<T>) => void,
     globalSearch: boolean = false
   ): this {
-    this.autoFilter = globalSearch
     this.filterCallback = callback
+    this.autoFilter = globalSearch
 
     return this
-  }
-
-  protected setupKeyword(value: string): string {
-    if (this.config.isSmartSearch()) {
-      let keyword = `%${value}%}`
-      if (this.config.isWildcard()) {
-        keyword = Helper.wildcardString(value, '%')
-      }
-
-      return keyword.replace('\\', '%')
-    }
-
-    return value
-  }
-
-  protected getColumnName(index: number, wantsAlias: boolean = false): string | null {
-    let column = this.request.columnName(index)
-
-    if (column === null || column === undefined) {
-      return null
-    }
-
-    if (Number.isInteger(column)) {
-      column = this.getColumnNameByIndex(index)
-    }
-
-    if (Helper.contains(column.toUpperCase(), ' AS ')) {
-      column = Helper.extractColumnName(column, wantsAlias)
-    }
-
-    return column
-  }
-
-  protected getColumnNameByIndex(index: number): string {
-    const name =
-      this.$columns[index] !== undefined && this.$columns[index] !== '*'
-        ? this.$columns[index]
-        : this.getPrimaryKeyName()
-
-    return this.$extraColumns.includes(name) ? this.getPrimaryKeyName() : name
-  }
-
-  protected getPrimaryKeyName(): string {
-    return 'id'
   }
 }

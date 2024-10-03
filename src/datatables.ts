@@ -9,7 +9,7 @@ import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/mod
 export default class Datatables {
   constructor(protected engines: Record<string, any>) {}
 
-  of<T>(...source: any): T {
+  of<T extends any>(...source: any): T {
     for (const engine of Object.values(this.engines)) {
       const canCreate = engine.canCreate as Function
 
