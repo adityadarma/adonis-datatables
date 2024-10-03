@@ -54,6 +54,8 @@ export abstract class DataTableAbstract implements DataTable {
 
   protected $editOnlySelectedColumns: boolean = false
 
+  protected $dataObject: boolean = true
+
   static canCreate(_source: any) {
     return false
   }
@@ -74,7 +76,7 @@ export abstract class DataTableAbstract implements DataTable {
   /**
    *  Implement function
    */
-  abstract results(): Promise<any[]>
+  abstract dataResults(): Promise<any[]>
 
   /**
    *  Implement function
@@ -94,7 +96,7 @@ export abstract class DataTableAbstract implements DataTable {
   /**
    *  Implement function
    */
-  abstract toJson(): Promise<Record<string, any> | void>
+  abstract results(): Promise<Record<string, any> | void>
 
   /**
    *  Implement function
@@ -178,7 +180,7 @@ export abstract class DataTableAbstract implements DataTable {
       this.config
     )
 
-    return await processor.process()
+    return await processor.process(this.$dataObject)
   }
 
   protected render(data: any[]): void {
@@ -547,6 +549,18 @@ export abstract class DataTableAbstract implements DataTable {
   ): this {
     this.filterCallback = callback
     this.autoFilter = globalSearch
+
+    return this
+  }
+
+  asJson(): this {
+    this.$dataObject = true
+
+    return this
+  }
+
+  asArray(): this {
+    this.$dataObject = false
 
     return this
   }

@@ -35,12 +35,12 @@ export default class DatabaseDataTable extends DataTableAbstract {
     return source instanceof DatabaseQueryBuilder
   }
 
-  async toJson(): Promise<Record<string, any> | void> {
+  async results(){
     try {
       this.prepareContext()
 
       const query = await this.prepareQuery()
-      const results = await query.results()
+      const results = await query.dataResults()
       const processed = await this.processResults(results)
 
       return this.render(processed)
@@ -49,7 +49,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
     }
   }
 
-  async results(): Promise<Record<string, any>[]> {
+  async dataResults(): Promise<Record<string, any>[]> {
     return await this.query
   }
 

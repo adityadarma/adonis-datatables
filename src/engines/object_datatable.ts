@@ -26,6 +26,10 @@ export default class ObjectDataTable extends DataTableAbstract {
     return super.create<T>(source)
   }
 
+  protected resolveCallback() {
+    return this
+  }
+
   defaultOrdering(): any {
     const self = this
     collect(this.request.orderableColumns())
@@ -46,7 +50,7 @@ export default class ObjectDataTable extends DataTableAbstract {
       })
   }
 
-  results(): any {
+  dataResults(): any {
     return this.collection.values().all()
   }
 
@@ -103,7 +107,7 @@ export default class ObjectDataTable extends DataTableAbstract {
     this.collection = this.collection.slice(offset, length)
   }
 
-  async toJson(): Promise<Record<string, any> | void> {
+  async results(): Promise<Record<string, any> | void> {
     try {
       this.prepareContext()
 
@@ -113,7 +117,7 @@ export default class ObjectDataTable extends DataTableAbstract {
       this.paginate()
 
       if (this.totalRecords) {
-        const results = await this.results()
+        const results = await this.dataResults()
         const processed = await this.processResults(results)
         const output = lodash.transform(
           processed,
@@ -153,9 +157,5 @@ export default class ObjectDataTable extends DataTableAbstract {
 
       return false
     })
-  }
-
-  protected resolveCallback() {
-    return this
   }
 }

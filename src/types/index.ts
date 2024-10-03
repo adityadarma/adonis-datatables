@@ -1,5 +1,7 @@
 export interface DataTable {
-  results(): Promise<any[]>
+  results(): Promise<Record<string, any> | void>
+
+  dataResults(): Promise<any[]>
 
   count(): Promise<number>
 
@@ -13,7 +15,9 @@ export interface DataTable {
 
   ordering(): void
 
-  toJson(): Promise<Record<string, any> | void>
+  asJson(): this
+
+  asArray(): this
 }
 
 export type Config = {

@@ -39,7 +39,7 @@ export default class DataProcessor {
     this.$includeIndex = columnDef['index'] ?? false
   }
 
-  async process() {
+  async process(isObject = true) {
     const indexColumn = this.config.get('index_column', 'DT_RowIndex')
 
     for (const row of Object.values(this.$results)) {
@@ -55,7 +55,7 @@ export default class DataProcessor {
         value[indexColumn] = ++this.start
       }
 
-      this.$output.push(value)
+      this.$output.push(isObject ? value : this.convertToArray(value))
     }
 
     return this.escapeColumns(this.$output)
@@ -117,6 +117,17 @@ export default class DataProcessor {
   protected removeExcessColumns(data: Record<string, any>): Record<string, any> {
     for (const value of Object.values(this.$excessColumns)) {
       lodash.unset(data, value)
+    }
+
+    return data
+  }
+
+  convertToArray(array: Record<string, any>): Record<string, any> {
+    const data: Record<string, any> = []
+    for (const [key, value] of Object.entries(array)) {
+      if (!data.includes(value)) {
+        data[key] = value
+      }
     }
 
     return data
