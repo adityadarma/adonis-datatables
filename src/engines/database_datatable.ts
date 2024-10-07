@@ -35,7 +35,7 @@ export default class DatabaseDataTable extends DataTableAbstract {
     return source instanceof DatabaseQueryBuilder
   }
 
-  async results(){
+  async results() {
     try {
       this.prepareContext()
 
