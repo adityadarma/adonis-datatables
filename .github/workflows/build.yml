@@ -1,7 +1,8 @@
 name: build
 
 on:
-  - dev
+  push:
+    branches: dev
 
 jobs:
   lint:
