@@ -1,0 +1,49 @@
+name: Publish Package to npmjs
+on:
+  pull_request:
+    branches: main
+  # release:
+  #   types: [published]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: npm install
+      - name: Run lint
+        run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: npm install
+      - name: Run typecheck
+        run: npm run typecheck
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: npm install
+      - name: Run build
+        run: npm run build
+
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm install
+      - run: npm run build
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
