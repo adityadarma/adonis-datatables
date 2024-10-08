@@ -1,6 +1,6 @@
 {
   "name": "@adityadarma/adonis-datatables",
-  "description": "",
+  "description": "Run server side datatables on AdonisJS",
   "version": "1.0.0",
   "engines": {
     "node": ">=20.6.0"
@@ -41,8 +41,12 @@
     "version": "npm run build",
     "prepublishOnly": "npm run build"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "datatables",
+    "adonis",
+    "adonisjs"
+  ],
+  "author": "Aditya Darma",
   "license": "MIT",
   "devDependencies": {
     "@adonisjs/assembler": "^7.7.0",
@@ -98,5 +102,9 @@
   "eslintConfig": {
     "extends": "@adonisjs/eslint-config/package"
   },
-  "prettier": "@adonisjs/prettier-config"
+  "prettier": "@adonisjs/prettier-config",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adityadarma/adonis-datatables"
+  }
 }
