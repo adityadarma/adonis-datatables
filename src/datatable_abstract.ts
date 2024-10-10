@@ -3,11 +3,10 @@ import { HttpContext } from '@adonisjs/core/http'
 import collect from 'collect.js'
 import Config from './config.js'
 import { Exception } from '@adonisjs/core/exceptions'
-import DataProcessor from './processors/data_processor.js'
+import DataProcessor from './processor.js'
 import Helper from './utils/helper.js'
 import { DataTable } from './types/index.js'
 import app from '@adonisjs/core/services/app'
-import lodash from 'lodash'
 
 export abstract class DataTableAbstract implements DataTable {
   protected ctx!: HttpContext
@@ -22,8 +21,8 @@ export abstract class DataTableAbstract implements DataTable {
     index: false,
     append: [],
     edit: [],
-    filter: [],
-    order: [],
+    filter: {},
+    order: {},
     only: [],
   }
 
@@ -139,7 +138,7 @@ export abstract class DataTableAbstract implements DataTable {
     return true
   }
 
-  protected filterRecords(): void {
+  protected async filterRecords(): Promise<void> {
     if (this.autoFilter && this.request.isSearchable()) {
       this.filtering()
     }
@@ -149,7 +148,7 @@ export abstract class DataTableAbstract implements DataTable {
     }
 
     this.columnSearch()
-    this.filteredCount()
+    await this.filteredCount()
   }
 
   protected smartGlobalSearch(keyword: string): void {
@@ -336,8 +335,10 @@ export abstract class DataTableAbstract implements DataTable {
     const datatableColumns = this.config.get('columns') as any[]
     const allowed = ['excess', 'escape', 'raw', 'blacklist', 'whitelist']
 
-    const intersectedKeys = lodash.intersection(Object.keys(datatableColumns), allowed)
-    return lodash.pick(datatableColumns, intersectedKeys)
+    return Helper.objectReplaceRecursive(
+      Helper.objectIntersectKey(datatableColumns, allowed),
+      this.$columnDef
+    )
   }
 
   only(columns: string[] = []): this {

@@ -32,26 +32,80 @@ export default class ObjectDataTable extends DataTableAbstract {
 
   defaultOrdering(): any {
     const self = this
-    collect(this.request.orderableColumns())
-      .map((orderable: Record<string, any>) => {
-        orderable['name'] = self.getColumnName(orderable['column'], true)
+    const orderable = this.request.orderableColumns()
 
-        return orderable
-      })
-      .each((orderable: Record<string, any>) => {
-        const column = self.getColumnName(orderable['column']) as string
-        const direction = orderable['direction']
+    if (orderable.length) {
+      this.collection = this.collection
+        .map((data) => Helper.dot(data))
+        .sort((a, b) => {
+          for (const value of Object.values(this.request.orderableColumns())) {
+            const column = self.getColumnName(value['column']) as string
+            const direction = value['direction']
+            let first: Record<string, any>
+            let second: Record<string, any>
+            let cmp: number
 
-        if (direction === 'desc') {
-          this.collection = this.collection.sortByDesc(column)
-        } else {
-          this.collection = this.collection.sortBy(column)
-        }
-      })
+            if (direction === 'desc') {
+              first = b
+              second = a
+            } else {
+              first = a
+              second = b
+            }
+            if (
+              Number.isInteger(first[column] ?? null) &&
+              Number.isInteger(second[column] ?? null)
+            ) {
+              if (first[column] < second[column]) {
+                cmp = -1
+              } else if (first[column] > second[column]) {
+                cmp = 1
+              } else {
+                cmp = 0
+              }
+            } else if (this.config.isCaseInsensitive()) {
+              const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
+              cmp = collator.compare(first[column], second[column])
+            } else {
+              const collator = new Intl.Collator(undefined, {
+                sensitivity: 'variant',
+                numeric: true,
+              })
+              cmp = collator.compare(first[column], second[column])
+            }
+            if (cmp !== 0) {
+              return cmp
+            }
+          }
+          return 0
+        })
+        .map((data) => {
+          for (const [index, value] of Object.entries(data)) {
+            lodash.unset(data, index)
+            lodash.set(data, index, value)
+          }
+
+          return data
+        })
+    }
   }
 
   dataResults(): any {
-    return this.collection.values().all()
+    return this.collection.all()
+  }
+
+  protected revertIndexColumn(): void {
+    if (this.$columnDef['index']) {
+      const indexColumn = this.config.get('datatables.index_column', 'DT_RowIndex')
+      const index = this.$dataObject ? indexColumn : 0
+      let start = this.request.start()
+
+      this.collection.transform((data) => {
+        data[index] = ++start
+
+        return data
+      })
+    }
   }
 
   setOffset(offset: number): this {
@@ -112,9 +166,6 @@ export default class ObjectDataTable extends DataTableAbstract {
       this.prepareContext()
 
       this.totalRecords = await this.totalCount()
-      this.ordering()
-      this.filterRecords()
-      this.paginate()
 
       if (this.totalRecords) {
         const results = await this.dataResults()
@@ -129,9 +180,14 @@ export default class ObjectDataTable extends DataTableAbstract {
         )
 
         this.collection = collect(output)
+        this.ordering()
+        await this.filterRecords()
+        this.paginate()
+
+        this.revertIndexColumn()
       }
 
-      return this.render(this.collection.values().all())
+      return this.render(this.collection.all())
     } catch (error) {
       return this.errorResponse(error)
     }
