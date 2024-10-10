@@ -1,8 +1,6 @@
 import lodash from 'lodash'
-import { objectIncludeIn } from '../utils/function.js'
-import Config from '../config.js'
-import RowProcessor from './row_processor.js'
-import Helper from '../utils/helper.js'
+import Config from './config.js'
+import Helper from './utils/helper.js'
 
 export default class DataProcessor {
   protected $output: Record<string, any>[] = []
@@ -66,7 +64,7 @@ export default class DataProcessor {
       const content = value['content']
       const resultContent = Helper.compileContent(content, data, row)
 
-      data = objectIncludeIn({ ...value, content: resultContent }, data)
+      data = Helper.objectIncludeIn({ ...value, content: resultContent }, data)
     }
 
     return data
@@ -174,5 +172,41 @@ export default class DataProcessor {
     })
 
     return row
+  }
+}
+
+class RowProcessor {
+  constructor(
+    protected data: Record<string, any>,
+    protected row: any
+  ) {}
+
+  rowValue(attribute: string, template: string) {
+    if (template) {
+      if (typeof template !== 'function' && lodash.get(this.data, template)) {
+        this.data[attribute] = lodash.get(this.data, template)
+      } else {
+        this.data[attribute] = Helper.compileContent(template, this.data, this.row)
+      }
+    }
+
+    return this
+  }
+
+  rowData(attribute: string, template: Record<string, any>) {
+    if (Object.keys(template).length) {
+      let data: Record<string, any> = {}
+      for (const [index, value] of Object.entries(template)) {
+        data[index] = Helper.compileContent(value as any, this.data, this.row)
+      }
+
+      this.data[attribute] = data
+    }
+
+    return this
+  }
+
+  getData() {
+    return this.data
   }
 }

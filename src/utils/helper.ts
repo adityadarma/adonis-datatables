@@ -149,7 +149,7 @@ export default class Helper {
   }
 
   static getMixedValue(data: Record<string, any>, param: Record<string, any>): Record<string, any> {
-    const casted = Helper.castToObject(param)
+    const casted = Helper.toObject(param)
 
     data['model'] = param
 
@@ -163,9 +163,13 @@ export default class Helper {
     return data
   }
 
-  static castToObject(param: Record<string, any>): Record<string, any> {
+  static toObject(param: Record<string, any>): Record<string, any> {
     if (typeof param['toJSON'] === 'function' && typeof param === 'object') {
       return param.toJSON()
+    }
+
+    if (Array.isArray(param)) {
+      return Object.assign({}, param)
     }
 
     return param
@@ -217,5 +221,57 @@ export default class Helper {
     }
 
     return false
+  }
+
+  static objectIncludeIn(item: any, data: Record<string, any>): Record<string, any> {
+    const isItemOrderInvalid = (i: { order: number }, a: Record<string, any>) => {
+      return i.order >= Object.keys(a).length
+    }
+
+    if (isItemOrderInvalid(item, data)) {
+      return { ...data, [item.name]: item.content }
+    }
+
+    let count = 0
+    const first: Record<string, any> = {}
+    const last = { ...data }
+
+    for (const key in data) {
+      if (count === item.order) {
+        continue
+      }
+
+      delete last[key]
+      first[key] = data[key]
+      count++
+    }
+
+    return { ...first, [item.name]: item.content, ...last }
+  }
+
+  static objectIntersectKey<T>(array: Record<string, T>, keys: string[]): Record<string, T> {
+    return Object.keys(array)
+      .filter((key) => keys.includes(key))
+      .reduce(
+        (result, key) => {
+          result[key] = array[key]
+          return result
+        },
+        {} as Record<string, T>
+      )
+  }
+
+  static objectReplaceRecursive(
+    target: Record<string, any>,
+    source: Record<string, any>
+  ): Record<string, any> {
+    for (const key in source) {
+      if (source[key] instanceof Object && key in target) {
+        target[key] = Helper.objectReplaceRecursive(target[key], source[key])
+      } else {
+        target[key] = source[key]
+      }
+    }
+    return target
   }
 }
