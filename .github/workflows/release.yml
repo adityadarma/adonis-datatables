@@ -1,10 +1,9 @@
 name: Publish Package to npmjs
 on:
-  workflow_dispatch:
-  pull_request:
-    branches:
-      - main
-    types: [closed]
+  workflow_run:
+    workflows: ["Test Pipeline"]
+    types:
+      - completed
 
 jobs:
   build:
