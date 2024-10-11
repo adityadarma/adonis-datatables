@@ -6,9 +6,12 @@ on:
       - dev
 
 jobs:
-  release:
+  tags:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm install
       - name: Get version from package.json
         id: get_version
         run: |
