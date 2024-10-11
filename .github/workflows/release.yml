@@ -44,10 +44,12 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Create GitHub tag
         run: |
-          git config user.name "Aditya Darma"
-          git config user.email "adhit.boys1@gmail.com"
-          git tag -a "v$VERSION" -m "Release version $VERSION"
-          git push origin "v$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ env.VERSION }}" -m "Release version ${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create GitHub release
         uses: actions/create-release@v1
         with:
