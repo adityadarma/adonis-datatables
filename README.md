@@ -8,7 +8,7 @@
 Adonis datatable is an inspiration from laravel datatable. This code is taken from some of those source codes.
 
 ## Official Documentation
-The documentation is available on the [Lucid website](https://adityadarma.github.io/adonis-datatables-docs)
+The documentation is available on the [Website](https://adityadarma.github.io/adonis-datatables-docs)
 
 ## License
 Adonis Datatables is open-sourced software licensed under the [MIT license](LICENSE.md).
