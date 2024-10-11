@@ -5,12 +5,11 @@ import Helper from '../utils/helper.js'
 
 export default class ObjectDataTable extends DataTableAbstract {
   protected $offset: number = 0
+  protected collection: Collection<any> = collect()
 
-  constructor(protected collection: Collection<any>) {
+  constructor(object: Record<string, any>[]) {
     super()
-    if (!(collection instanceof Collection)) {
-      this.collection = new Collection(collection)
-    }
+    this.collection = new Collection(object)
     this.$columns = this.collection.keys()
   }
 
@@ -30,20 +29,20 @@ export default class ObjectDataTable extends DataTableAbstract {
     return this
   }
 
-  defaultOrdering(): any {
+  protected defaultOrdering(): any {
     const self = this
     const orderable = this.request.orderableColumns()
 
     if (orderable.length) {
       this.collection = this.collection
         .map((data) => Helper.dot(data))
-        .sort((a, b) => {
-          for (const value of Object.values(this.request.orderableColumns())) {
+        .sort((a: Record<string, any>, b: Record<string, any>) => {
+          for (const value of Object.values(orderable)) {
             const column = self.getColumnName(value['column']) as string
             const direction = value['direction']
             let first: Record<string, any>
             let second: Record<string, any>
-            let cmp: number
+            let cmp: number = 0
 
             if (direction === 'desc') {
               first = b
@@ -60,10 +59,8 @@ export default class ObjectDataTable extends DataTableAbstract {
                 cmp = -1
               } else if (first[column] > second[column]) {
                 cmp = 1
-              } else {
-                cmp = 0
               }
-            } else if (this.config.isCaseInsensitive()) {
+            } else if (self.config.isCaseInsensitive()) {
               const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
               cmp = collator.compare(first[column], second[column])
             } else {
@@ -73,9 +70,8 @@ export default class ObjectDataTable extends DataTableAbstract {
               })
               cmp = collator.compare(first[column], second[column])
             }
-            if (cmp !== 0) {
-              return cmp
-            }
+
+            return cmp
           }
           return 0
         })
@@ -88,10 +84,6 @@ export default class ObjectDataTable extends DataTableAbstract {
           return data
         })
     }
-  }
-
-  dataResults(): any {
-    return this.collection.all()
   }
 
   protected revertIndexColumn(): void {
@@ -108,14 +100,50 @@ export default class ObjectDataTable extends DataTableAbstract {
     }
   }
 
+  async count(): Promise<number> {
+    return this.collection.count()
+  }
+
+  async results(): Promise<Record<string, any> | void> {
+    try {
+      this.prepareContext()
+
+      this.totalRecords = await this.totalCount()
+
+      if (this.totalRecords) {
+        const results = this.dataResults()
+        const processed = this.processResults(results)
+        const output = lodash.transform(
+          processed,
+          (result: Record<string, any>, value: any, key: string) => {
+            if (value) {
+              result[key] = value
+            }
+          }
+        )
+
+        this.collection = collect(output)
+        this.ordering()
+        await this.filterRecords()
+        this.paginate()
+
+        this.revertIndexColumn()
+      }
+
+      return this.render(this.collection.all())
+    } catch (error) {
+      return this.errorResponse(error)
+    }
+  }
+
+  dataResults(): any {
+    return this.collection.all()
+  }
+
   setOffset(offset: number): this {
     this.$offset = offset
 
     return this
-  }
-
-  async count(): Promise<number> {
-    return this.collection.count()
   }
 
   columnSearch(): void {
@@ -159,38 +187,6 @@ export default class ObjectDataTable extends DataTableAbstract {
     const length = this.request.length() > 0 ? this.request.length() : 10
 
     this.collection = this.collection.slice(offset, length)
-  }
-
-  async results(): Promise<Record<string, any> | void> {
-    try {
-      this.prepareContext()
-
-      this.totalRecords = await this.totalCount()
-
-      if (this.totalRecords) {
-        const results = await this.dataResults()
-        const processed = await this.processResults(results)
-        const output = lodash.transform(
-          processed,
-          (result: Record<string, any>, value: any, key: string) => {
-            if (value) {
-              result[key] = value
-            }
-          }
-        )
-
-        this.collection = collect(output)
-        this.ordering()
-        await this.filterRecords()
-        this.paginate()
-
-        this.revertIndexColumn()
-      }
-
-      return this.render(this.collection.all())
-    } catch (error) {
-      return this.errorResponse(error)
-    }
   }
 
   globalSearch(keyword: string): void {

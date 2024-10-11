@@ -9,20 +9,6 @@ export default class LucidDataTable extends DatabaseDataTable {
     super(query)
   }
 
-  getPrimaryKeyName(): any {
-    return this.query.model.primaryKey
-  }
-
-  static canCreate(source: any): boolean {
-    return source instanceof ModelQueryBuilder
-  }
-
-  async count(): Promise<number> {
-    const builder = this.query.clone() as ModelQueryBuilder
-    const result = await builder.exec()
-    return result.length
-  }
-
   protected compileQuerySearch(
     query: ModelQueryBuilderContract<LucidModel, any>,
     columnName: string,
@@ -94,5 +80,19 @@ export default class LucidDataTable extends DatabaseDataTable {
 
   protected performJoin(table: string, foreign: string, other: string): void {
     this.getBaseQueryBuilder().leftJoin(table, foreign, '=', other)
+  }
+
+  protected getPrimaryKeyName(): any {
+    return this.query.model.primaryKey
+  }
+
+  static canCreate(source: any): boolean {
+    return source instanceof ModelQueryBuilder
+  }
+
+  async count(): Promise<number> {
+    const builder = this.query.clone() as ModelQueryBuilder
+    const result = await builder.exec()
+    return result.length
   }
 }
