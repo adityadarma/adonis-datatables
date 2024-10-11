@@ -37,7 +37,7 @@ export default class DataProcessor {
     this.$includeIndex = columnDef['index'] ?? false
   }
 
-  async process(isObject = true) {
+  process(isObject = true) {
     const indexColumn = this.config.get('index_column', 'DT_RowIndex')
 
     for (const row of Object.values(this.$results)) {
@@ -120,7 +120,7 @@ export default class DataProcessor {
     return data
   }
 
-  convertToArray(array: Record<string, any>): Record<string, any> {
+  protected convertToArray(array: Record<string, any>): Record<string, any> {
     const data: Record<string, any> = []
     for (const [key, value] of Object.entries(array)) {
       if (!data.includes(value)) {

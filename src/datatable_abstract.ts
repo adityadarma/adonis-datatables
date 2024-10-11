@@ -55,6 +55,10 @@ export abstract class DataTableAbstract implements DataTable {
 
   protected $dataObject: boolean = true
 
+  constructor() {
+    this.config = new Config(app.config.get('datatables'))
+  }
+
   static canCreate(_source: any) {
     return false
   }
@@ -63,14 +67,15 @@ export abstract class DataTableAbstract implements DataTable {
     return new this(source)
   }
 
-  constructor() {
-    this.config = new Config(app.config.get('datatables'))
-  }
+  /**
+   *  Implement function
+   */
+  protected abstract defaultOrdering(): any
 
   /**
    *  Implement function
    */
-  abstract defaultOrdering(): any
+  protected abstract resolveCallback(): any
 
   /**
    *  Implement function
@@ -101,11 +106,6 @@ export abstract class DataTableAbstract implements DataTable {
    *  Implement function
    */
   abstract globalSearch(keyword: string): void
-
-  /**
-   *  Implement function
-   */
-  protected abstract resolveCallback(): any
 
   protected prepareContext(): void {
     if (this.ctx) {
@@ -170,7 +170,7 @@ export abstract class DataTableAbstract implements DataTable {
     }
   }
 
-  protected async processResults(results: Record<string, any>[]): Promise<Record<string, any>[]> {
+  protected processResults(results: Record<string, any>[]): Record<string, any>[] {
     const processor = new DataProcessor(
       results,
       this.getColumnsDefinition(),
@@ -179,7 +179,7 @@ export abstract class DataTableAbstract implements DataTable {
       this.config
     )
 
-    return await processor.process(this.$dataObject)
+    return processor.process(this.$dataObject)
   }
 
   protected render(data: any[]): void {

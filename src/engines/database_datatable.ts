@@ -14,8 +14,6 @@ export default class DatabaseDataTable extends DataTableAbstract {
 
   protected keepSelectBindings: boolean = false
 
-  protected ignoreSelectInCountQuery: boolean = false
-
   protected disableUserOrdering: boolean = false
 
   constructor(
@@ -27,110 +25,82 @@ export default class DatabaseDataTable extends DataTableAbstract {
     this.$columns = query.columns
   }
 
-  protected getConnection() {
-    return this.query.knexQuery.client
-  }
-
   static canCreate(source: any): boolean {
     return source instanceof DatabaseQueryBuilder
   }
 
-  async results() {
-    try {
-      this.prepareContext()
-
-      const query = await this.prepareQuery()
-      const results = await query.dataResults()
-      const processed = await this.processResults(results)
-
-      return this.render(processed)
-    } catch (error) {
-      return this.errorResponse(error)
-    }
+  protected getConnection() {
+    return this.query.knexQuery.client
   }
 
-  async dataResults(): Promise<Record<string, any>[]> {
-    return await this.query
+  protected defaultOrdering(): any {
+    const self = this
+    collect(this.request.orderableColumns())
+      .map((orderable: Record<string, any>) => {
+        orderable['name'] = self.getColumnName(orderable['column'], true)
+
+        return orderable
+      })
+      .reject(
+        (orderable: Record<string, any>) =>
+          self.isBlacklisted(orderable['name']) && !self.hasOrderColumn(orderable['name'])
+      )
+      .each((orderable: Record<string, any>) => {
+        const column = self.resolveRelationColumn(orderable['name'])
+
+        if (self.hasOrderColumn(orderable['name'])) {
+          self.applyOrderColumn(orderable['name'], orderable)
+        } else if (self.hasOrderColumn(column)) {
+          self.applyOrderColumn(column, orderable)
+        } else {
+          const nullsLastSql = self.getNullsLastSql(column, orderable['direction'])
+          const normalSql = self.wrapColumn(column) + ' ' + orderable['direction']
+          const sql = self.nullsLast ? nullsLastSql : normalSql
+          self.query.orderByRaw(sql)
+        }
+      })
   }
 
-  async prepareQuery(): Promise<this> {
-    if (!this.prepared) {
-      this.totalRecords = await this.totalCount()
-
-      await this.filterRecords()
-      this.ordering()
-      this.paginate()
-    }
-
-    this.prepared = true
-
-    return this
+  protected hasOrderColumn(column: string): boolean {
+    return this.$columnDef['order'][column] !== undefined
   }
 
-  async count(): Promise<number> {
-    const builder = this.query.clone() as DatabaseQueryBuilder
-    const result = await builder.exec()
-    return result.length
-  }
-
-  async filterRecords(): Promise<void> {
-    const initialQuery = this.query.clone()
-
-    if (this.autoFilter && this.request.isSearchable()) {
-      this.filtering()
+  protected applyOrderColumn(column: string, orderable: Record<string, any>): void {
+    let sql = this.$columnDef['order'][column]['sql']
+    if (sql === false) {
+      return
     }
 
-    if (typeof this.filterCallback === 'function') {
-      this.filterCallback(this.query)
-    }
-
-    this.columnSearch()
-
-    if (!this.$skipTotalRecords && this.query === initialQuery) {
-      this.filteredRecords ??= this.totalRecords
+    if (typeof sql === 'function') {
+      sql(this.query, orderable['direction'])
     } else {
-      await this.filteredCount()
-
-      if (this.$skipTotalRecords) {
-        this.totalRecords = this.filteredRecords
-      }
+      sql = sql.replace('$1', orderable['direction'])
+      const bindings = this.$columnDef['order'][column]['bindings']
+      this.query.orderByRaw(sql, bindings)
     }
   }
 
-  columnSearch(): void {
-    const columns = this.request.columns()
+  protected getNullsLastSql(column: string, direction: string): string {
+    const sql = this.config.get('datatables.nulls_last_sql', '%s %s NULLS LAST')
 
-    for (let index = 0; index < columns.length; index++) {
-      let column = this.getColumnName(index)
+    return sprintf(sql, column, direction)
+      .replace(':column', column)
+      .replace(':direction', direction)
+  }
 
-      if (column === null) {
-        continue
-      }
-
-      if (
-        !this.request.isColumnSearchable(index) ||
-        (this.isBlacklisted(column) && !this.hasFilterColumn(column))
-      ) {
-        continue
-      }
-
-      if (this.hasFilterColumn(column)) {
-        const keyword = this.getColumnSearchKeyword(index, true)
-        this.applyFilterColumn(this.getBaseQueryBuilder(), column, keyword)
+  protected attachAppends(data: Record<string, any>): Record<string, any> {
+    const appends: Record<string, any> = {}
+    for (const [key, value] of Object.entries(this.appends)) {
+      if (typeof value === 'function') {
+        appends[key] = Helper.value(value(this.getFilteredQuery()))
       } else {
-        column = this.resolveRelationColumn(column)
-        const keyword = this.getColumnSearchKeyword(index)
-        this.compileColumnSearch(index, column, keyword)
+        appends[key] = value
       }
     }
-  }
 
-  hasFilterColumn(columnName: string): boolean {
-    return this.$columnDef['filter'][columnName] !== undefined
-  }
+    appends['disableOrdering'] = this.disableUserOrdering
 
-  wrapColumn(column: string) {
-    return Helper.wrapColumn(column, true)
+    return { ...data, ...appends }
   }
 
   protected getColumnSearchKeyword(i: number, raw: boolean = false): string {
@@ -153,29 +123,6 @@ export default class DatabaseDataTable extends DataTableAbstract {
     const callback = this.$columnDef['filter'][columnName]['method']
 
     callback(query, keyword)
-  }
-
-  getBaseQueryBuilder(
-    instance:
-      | DatabaseQueryBuilderContract<Dictionary<any, string>>
-      | ModelQueryBuilderContract<LucidModel, any>
-      | undefined = undefined
-  ):
-    | DatabaseQueryBuilderContract<Dictionary<any, string>>
-    | ModelQueryBuilderContract<LucidModel, any> {
-    if (!instance) {
-      instance = this.query as
-        | DatabaseQueryBuilderContract<Dictionary<any, string>>
-        | ModelQueryBuilderContract<LucidModel, any>
-    }
-
-    return instance
-  }
-
-  getQuery():
-    | DatabaseQueryBuilderContract<Dictionary<any, string>>
-    | ModelQueryBuilderContract<LucidModel, any> {
-    return this.query
   }
 
   protected resolveRelationColumn(column: string): string {
@@ -216,19 +163,6 @@ export default class DatabaseDataTable extends DataTableAbstract {
     this.query.whereRaw(sql, [keyword])
   }
 
-  castColumn(column: string): string {
-    const driverName = this.getConnection().driverName
-
-    switch (driverName) {
-      case 'pgsql':
-        return `CAST(${column} AS TEXT)`
-      case 'firebird':
-        return `CAST(${column} AS VARCHAR(255))`
-      default:
-        return column
-    }
-  }
-
   protected compileQuerySearch(
     query:
       | ModelQueryBuilderContract<LucidModel, any>
@@ -248,7 +182,103 @@ export default class DatabaseDataTable extends DataTableAbstract {
     ;(query as any)[method](sql, [this.prepareKeyword(keyword)])
   }
 
-  addTablePrefix(
+  protected prepareKeyword(keyword: string): string {
+    if (this.config.isCaseInsensitive()) {
+      keyword = keyword.toLowerCase()
+    }
+
+    if (this.config.isStartsWithSearch()) {
+      return `${keyword}%`
+    }
+
+    if (this.config.isWildcard()) {
+      keyword = Helper.wildcardString(keyword, '%')
+    }
+
+    if (this.config.isSmartSearch()) {
+      keyword = `%${keyword}%`
+    }
+
+    return keyword
+  }
+
+  protected async prepareQuery(): Promise<this> {
+    if (!this.prepared) {
+      this.totalRecords = await this.totalCount()
+
+      await this.filterRecords()
+      this.ordering()
+      this.paginate()
+    }
+
+    this.prepared = true
+
+    return this
+  }
+
+  protected async filterRecords(): Promise<void> {
+    const initialQuery = this.query.clone()
+
+    if (this.autoFilter && this.request.isSearchable()) {
+      this.filtering()
+    }
+
+    if (typeof this.filterCallback === 'function') {
+      this.filterCallback(this.query)
+    }
+
+    this.columnSearch()
+
+    if (!this.$skipTotalRecords && this.query === initialQuery) {
+      this.filteredRecords ??= this.totalRecords
+    } else {
+      await this.filteredCount()
+
+      if (this.$skipTotalRecords) {
+        this.totalRecords = this.filteredRecords
+      }
+    }
+  }
+
+  protected hasFilterColumn(columnName: string): boolean {
+    return this.$columnDef['filter'][columnName] !== undefined
+  }
+
+  protected wrapColumn(column: string) {
+    return Helper.wrapColumn(column, true)
+  }
+
+  protected getBaseQueryBuilder(
+    instance:
+      | DatabaseQueryBuilderContract<Dictionary<any, string>>
+      | ModelQueryBuilderContract<LucidModel, any>
+      | undefined = undefined
+  ):
+    | DatabaseQueryBuilderContract<Dictionary<any, string>>
+    | ModelQueryBuilderContract<LucidModel, any> {
+    if (!instance) {
+      instance = this.query as
+        | DatabaseQueryBuilderContract<Dictionary<any, string>>
+        | ModelQueryBuilderContract<LucidModel, any>
+    }
+
+    return instance
+  }
+
+  protected castColumn(column: string): string {
+    const driverName = this.getConnection().driverName
+
+    switch (driverName) {
+      case 'pgsql':
+        return `CAST(${column} AS TEXT)`
+      case 'firebird':
+        return `CAST(${column} AS VARCHAR(255))`
+      default:
+        return column
+    }
+  }
+
+  protected addTablePrefix(
     query:
       | DatabaseQueryBuilderContract<Dictionary<any, string>>
       | ModelQueryBuilderContract<LucidModel, any>,
@@ -270,24 +300,69 @@ export default class DatabaseDataTable extends DataTableAbstract {
     return this.wrapColumn(column)
   }
 
-  protected prepareKeyword(keyword: string): string {
-    if (this.config.isCaseInsensitive()) {
-      keyword = keyword.toLowerCase()
-    }
+  protected getFilteredQuery():
+    | DatabaseQueryBuilderContract<Dictionary<any, string>>
+    | ModelQueryBuilderContract<LucidModel, any> {
+    this.prepareQuery()
 
-    if (this.config.isStartsWithSearch()) {
-      return `${keyword}%`
-    }
+    return this.query
+  }
 
-    if (this.config.isWildcard()) {
-      keyword = Helper.wildcardString(keyword, '%')
-    }
+  protected resolveCallback(): any {
+    return this.query
+  }
 
-    if (this.config.isSmartSearch()) {
-      keyword = `%${keyword}%`
-    }
+  async results() {
+    try {
+      this.prepareContext()
 
-    return keyword
+      const query = await this.prepareQuery()
+      const results = await query.dataResults()
+      const processed = this.processResults(results)
+
+      return this.render(processed)
+    } catch (error) {
+      return this.errorResponse(error)
+    }
+  }
+
+  async dataResults(): Promise<Record<string, any>[]> {
+    console.log(this.query.toQuery())
+    return await this.query
+  }
+
+  async count(): Promise<number> {
+    const builder = this.query.clone() as DatabaseQueryBuilder
+    const result = await builder.exec()
+    return result.length
+  }
+
+  columnSearch(): void {
+    const columns = this.request.columns()
+
+    for (let index = 0; index < columns.length; index++) {
+      let column = this.getColumnName(index)
+
+      if (column === null) {
+        continue
+      }
+
+      if (
+        !this.request.isColumnSearchable(index) ||
+        (this.isBlacklisted(column) && !this.hasFilterColumn(column))
+      ) {
+        continue
+      }
+
+      if (this.hasFilterColumn(column)) {
+        const keyword = this.getColumnSearchKeyword(index, true)
+        this.applyFilterColumn(this.getBaseQueryBuilder(), column, keyword)
+      } else {
+        column = this.resolveRelationColumn(column)
+        const keyword = this.getColumnSearchKeyword(index)
+        this.compileColumnSearch(index, column, keyword)
+      }
+    }
   }
 
   filterColumn(
@@ -353,61 +428,6 @@ export default class DatabaseDataTable extends DataTableAbstract {
     return super.addColumn(name, content, order)
   }
 
-  defaultOrdering(): any {
-    const self = this
-    collect(this.request.orderableColumns())
-      .map((orderable: Record<string, any>) => {
-        orderable['name'] = self.getColumnName(orderable['column'], true)
-
-        return orderable
-      })
-      .reject(
-        (orderable: Record<string, any>) =>
-          self.isBlacklisted(orderable['name']) && !self.hasOrderColumn(orderable['name'])
-      )
-      .each((orderable: Record<string, any>) => {
-        const column = self.resolveRelationColumn(orderable['name'])
-
-        if (self.hasOrderColumn(orderable['name'])) {
-          self.applyOrderColumn(orderable['name'], orderable)
-        } else if (self.hasOrderColumn(column)) {
-          self.applyOrderColumn(column, orderable)
-        } else {
-          const nullsLastSql = self.getNullsLastSql(column, orderable['direction'])
-          const normalSql = self.wrapColumn(column) + ' ' + orderable['direction']
-          const sql = self.nullsLast ? nullsLastSql : normalSql
-          self.query.orderByRaw(sql)
-        }
-      })
-  }
-
-  protected hasOrderColumn(column: string): boolean {
-    return this.$columnDef['order'][column] !== undefined
-  }
-
-  protected applyOrderColumn(column: string, orderable: Record<string, any>): void {
-    let sql = this.$columnDef['order'][column]['sql']
-    if (sql === false) {
-      return
-    }
-
-    if (typeof sql === 'function') {
-      sql(this.query, orderable['direction'])
-    } else {
-      sql = sql.replace('$1', orderable['direction'])
-      const bindings = this.$columnDef['order'][column]['bindings']
-      this.query.orderByRaw(sql, bindings)
-    }
-  }
-
-  protected getNullsLastSql(column: string, direction: string): string {
-    const sql = this.config.get('datatables.nulls_last_sql', '%s %s NULLS LAST')
-
-    return sprintf(sql, column, direction)
-      .replace(':column', column)
-      .replace(':direction', direction)
-  }
-
   globalSearch(keyword: string): void {
     const self = this
 
@@ -429,44 +449,11 @@ export default class DatabaseDataTable extends DataTableAbstract {
     })
   }
 
-  protected attachAppends(data: Record<string, any>): Record<string, any> {
-    const appends: Record<string, any> = {}
-    for (const [key, value] of Object.entries(this.appends)) {
-      if (typeof value === 'function') {
-        appends[key] = Helper.value(value(this.getFilteredQuery()))
-      } else {
-        appends[key] = value
-      }
-    }
-
-    appends['disableOrdering'] = this.disableUserOrdering
-
-    return { ...data, ...appends }
-  }
-
-  getFilteredQuery():
-    | DatabaseQueryBuilderContract<Dictionary<any, string>>
-    | ModelQueryBuilderContract<LucidModel, any> {
-    this.prepareQuery()
-
-    return this.query
-  }
-
-  ignoreSelectsInCountQuery(): this {
-    this.ignoreSelectInCountQuery = true
-
-    return this
-  }
-
   ordering(): void {
     if (this.disableUserOrdering) {
       return
     }
 
     super.ordering()
-  }
-
-  resolveCallback(): any {
-    return this.query
   }
 }

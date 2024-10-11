@@ -1,7 +1,7 @@
 {
   "name": "@adityadarma/adonis-datatables",
   "description": "Package server side datatables on AdonisJS",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "engines": {
     "node": ">=20.6.0"
   },
@@ -46,7 +46,7 @@
     "adonis",
     "adonisjs"
   ],
-  "author": "Aditya Darma",
+  "author": "Aditya Darma <adhit.boys1@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "@adonisjs/assembler": "^7.7.0",
