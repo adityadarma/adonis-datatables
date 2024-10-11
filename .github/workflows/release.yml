@@ -53,6 +53,7 @@ jobs:
       - name: Setup GitHub credentials for pushing tags
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/adityadarma/adonis-datatables.git
+          git checkout main
       - name: Create GitHub tag
         run: |
           git config user.name "github-actions[bot]"
@@ -61,13 +62,21 @@ jobs:
           git push origin "v${{ env.VERSION }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Create GitHub release
-      #   uses: actions/create-release@v1
-      #   with:
-      #     tag_name: "v${{ env.VERSION }}"
-      #     release_name: "Release v${{ env.VERSION }}"
-      #     body: "Automatic release of version v${{ env.VERSION }}."
-      #     draft: false
-      #     prerelease: false
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get merged commits from last tag to current
+        id: logs
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0)
+          echo "Last tag: $LAST_TAG"
+          LOGS=$(git log ${LAST_TAG}..HEAD --oneline)
+          echo "LOGS=$LOGS" >> $GITHUB_ENV
+
+      - name: Create GitHub release
+        uses: actions/create-release@v1
+        with:
+          tag_name: "v${{ env.VERSION }}"
+          release_name: "Release v${{ env.VERSION }}"
+          body: ${{ env.LOGS }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
