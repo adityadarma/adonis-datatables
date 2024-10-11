@@ -1,4 +1,5 @@
 name: Publish Package to npmjs
+
 on:
   workflow_run:
     workflows: ["Test Pipeline"]
@@ -42,6 +43,9 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Setup GitHub credentials for pushing tags
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/adityadarma/adonis-datatables.git
       - name: Create GitHub tag
         run: |
           git config user.name "github-actions[bot]"
@@ -50,13 +54,13 @@ jobs:
           git push origin "v${{ env.VERSION }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create GitHub release
-        uses: actions/create-release@v1
-        with:
-          tag_name: "v${{ env.VERSION }}"
-          release_name: "Release v${{ env.VERSION }}"
-          body: "Automatic release of version v${{ env.VERSION }}."
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Create GitHub release
+      #   uses: actions/create-release@v1
+      #   with:
+      #     tag_name: "v${{ env.VERSION }}"
+      #     release_name: "Release v${{ env.VERSION }}"
+      #     body: "Automatic release of version v${{ env.VERSION }}."
+      #     draft: false
+      #     prerelease: false
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
