@@ -5,11 +5,12 @@ import ObjectDataTable from './engines/object_datatable.js'
 import { Collection } from 'collect.js'
 import { DatabaseQueryBuilderContract, Dictionary } from '@adonisjs/lucid/types/querybuilder'
 import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
+import { DataTableAbstract } from './datatable_abstract.js'
 
 export default class Datatables {
   constructor(protected engines: Record<string, any>) {}
 
-  of<T extends any>(...source: any): T {
+  of<T extends DataTableAbstract>(...source: any): T {
     for (const engine of Object.values(this.engines)) {
       const canCreate = engine.canCreate as Function
 

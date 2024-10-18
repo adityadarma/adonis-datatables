@@ -1,5 +1,12 @@
 import type { ApplicationService } from '@adonisjs/core/types'
 import Datatables from '../src/datatables.js'
+import { DbQueryEventNode } from '@adonisjs/lucid/types/database'
+
+declare module '@adonisjs/core/types' {
+  export interface EventsList {
+    'db:query': DbQueryEventNode
+  }
+}
 
 export default class DatatablesProvider {
   constructor(protected app: ApplicationService) {}
@@ -7,18 +14,18 @@ export default class DatatablesProvider {
   /**
    * Register bindings to the container
    */
-  register() {}
-
-  /**
-   * The container bindings have booted
-   */
-  async boot() {
+  register() {
     this.app.container.bind('datatables', () => {
       const engines: Record<string, any> = this.app.config.get(`datatables.engines`)
 
       return new Datatables(engines)
     })
   }
+
+  /**
+   * The container bindings have booted
+   */
+  async boot() {}
 
   /**
    * The application has been booted
