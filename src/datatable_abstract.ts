@@ -7,6 +7,7 @@ import DataProcessor from './processor.js'
 import Helper from './utils/helper.js'
 import { DataTable } from './types/index.js'
 import app from '@adonisjs/core/services/app'
+import emitter from '@adonisjs/core/services/emitter'
 
 export abstract class DataTableAbstract implements DataTable {
   protected ctx!: HttpContext
@@ -55,8 +56,18 @@ export abstract class DataTableAbstract implements DataTable {
 
   protected $dataObject: boolean = true
 
+  protected $queryLogging: Record<string, any>[] = []
+
   constructor() {
     this.config = new Config(app.config.get('datatables'))
+
+    emitter.on('db:query', (query) => {
+      this.$queryLogging.push({
+        query: query.sql,
+        bindings: query.bindings,
+        time: `${query.duration}ms`,
+      })
+    })
   }
 
   static canCreate(_source: any) {
@@ -198,6 +209,8 @@ export abstract class DataTableAbstract implements DataTable {
     for (const [key, value] of this.config.jsonHeaders().entries()) {
       response.append(key, value)
     }
+
+    emitter.clearListeners('db:query')
     return response.json(output)
   }
 
@@ -206,12 +219,15 @@ export abstract class DataTableAbstract implements DataTable {
   }
 
   protected showDebugger(output: Record<string, any>): Record<string, any> {
+    output['queries'] = this.$queryLogging
     output['input'] = this.request.all()
 
     return output
   }
 
   protected errorResponse(exception: Exception) {
+    emitter.clearListeners('db:query')
+
     if (!this.ctx) {
       return
     }

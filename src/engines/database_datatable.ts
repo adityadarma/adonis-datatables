@@ -327,7 +327,6 @@ export default class DatabaseDataTable extends DataTableAbstract {
   }
 
   async dataResults(): Promise<Record<string, any>[]> {
-    console.log(this.query.toQuery())
     return await this.query
   }
 
