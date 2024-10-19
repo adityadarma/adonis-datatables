@@ -12,7 +12,7 @@ The documentation is available on the [Website](https://adityadarma.github.io/ad
 
 ## License
 
-Adonis Datatables is open-sourced software licensed under the [MIT license](LICENSE.md).
+This package is open-sourced software licensed under the [MIT license](LICENSE.md).
 
 [gh-workflow-image]: https://img.shields.io/github/actions/workflow/status/adityadarma/adonis-datatables/release.yml?style=for-the-badge
 [gh-workflow-url]: https://github.com/adityadarma/adonis-datatables/actions/workflows/release.yml 'Github action'
