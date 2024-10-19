@@ -5,24 +5,14 @@ import Helper from '../utils/helper.js'
 
 export default class ObjectDataTable extends DataTableAbstract {
   protected $offset: number = 0
-  protected collection: Collection<any> = collect()
 
-  constructor(object: Record<string, any>[]) {
+  constructor(protected items: Record<string, any>[]) {
     super()
-    this.collection = new Collection(object)
-    this.$columns = this.collection.keys()
+    this.$columns = collect(this.items).keys()
   }
 
   static canCreate(source: any): boolean {
     return typeof source === 'object' || source instanceof Collection
-  }
-
-  static create<T>(this: new (source: any) => T, source: any): T {
-    if (!(source instanceof Collection)) {
-      source = new Collection(source)
-    }
-
-    return super.create<T>(source)
   }
 
   protected resolveCallback() {
@@ -34,7 +24,7 @@ export default class ObjectDataTable extends DataTableAbstract {
     const orderable = this.request.orderableColumns()
 
     if (orderable.length) {
-      this.collection = this.collection
+      this.items = collect(this.items)
         .map((data) => Helper.dot(data))
         .sort((a: Record<string, any>, b: Record<string, any>) => {
           for (const value of Object.values(orderable)) {
@@ -83,6 +73,7 @@ export default class ObjectDataTable extends DataTableAbstract {
 
           return data
         })
+        .all()
     }
   }
 
@@ -92,7 +83,7 @@ export default class ObjectDataTable extends DataTableAbstract {
       const index = this.$dataObject ? indexColumn : 0
       let start = this.request.start()
 
-      this.collection.transform((data) => {
+      collect(this.items).transform((data) => {
         data[index] = ++start
 
         return data
@@ -101,7 +92,7 @@ export default class ObjectDataTable extends DataTableAbstract {
   }
 
   async count(): Promise<number> {
-    return this.collection.count()
+    return collect(this.items).count()
   }
 
   async results(): Promise<Record<string, any> | void> {
@@ -122,7 +113,7 @@ export default class ObjectDataTable extends DataTableAbstract {
           }
         )
 
-        this.collection = collect(output)
+        this.items = collect(output).all()
         this.ordering()
         await this.filterRecords()
         this.paginate()
@@ -130,14 +121,14 @@ export default class ObjectDataTable extends DataTableAbstract {
         this.revertIndexColumn()
       }
 
-      return this.render(this.collection.all())
+      return this.render(collect(this.items).all())
     } catch (error) {
       return this.errorResponse(error)
     }
   }
 
   dataResults(): any {
-    return this.collection.all()
+    return collect(this.items).all()
   }
 
   setOffset(offset: number): this {
@@ -162,23 +153,25 @@ export default class ObjectDataTable extends DataTableAbstract {
       const regex = this.request.isRegex(i)
       const keyword = this.request.columnKeyword(i)
 
-      this.collection = this.collection.filter((row: Record<string, any>) => {
-        const value = lodash.get(row, column)
+      this.items = collect(this.items)
+        .filter((row: Record<string, any>) => {
+          const value = lodash.get(row, column)
 
-        if (self.config.isCaseInsensitive()) {
-          if (regex) {
-            return new RegExp(keyword, 'i').test(value)
+          if (self.config.isCaseInsensitive()) {
+            if (regex) {
+              return new RegExp(keyword, 'i').test(value)
+            }
+
+            return Helper.contains(value.toLowerCase(), keyword.toLowerCase())
           }
 
-          return Helper.contains(value.toLowerCase(), keyword.toLowerCase())
-        }
+          if (regex) {
+            return new RegExp(keyword).test(value)
+          }
 
-        if (regex) {
-          return new RegExp(keyword).test(value)
-        }
-
-        return Helper.contains(value, keyword)
-      })
+          return Helper.contains(value, keyword)
+        })
+        .all()
     }
   }
 
@@ -186,28 +179,30 @@ export default class ObjectDataTable extends DataTableAbstract {
     const offset = this.request.start() - this.$offset
     const length = this.request.length() > 0 ? this.request.length() : 10
 
-    this.collection = this.collection.slice(offset, length)
+    this.items = collect(this.items).slice(offset, length).all()
   }
 
   globalSearch(keyword: string): void {
     keyword = this.config.isCaseInsensitive() ? keyword.toLowerCase() : keyword
 
-    this.collection = this.collection.filter((row: any) => {
-      for (const index of Object.values(this.request.searchableColumnIndex())) {
-        const column = this.getColumnName(index) as string
-        let value = lodash.get(row, column)
-        if (typeof value !== 'string') {
-          continue
-        } else {
-          value = this.config.isCaseInsensitive() ? value.toLowerCase() : value
+    this.items = collect(this.items)
+      .filter((row: any) => {
+        for (const index of Object.values(this.request.searchableColumnIndex())) {
+          const column = this.getColumnName(index) as string
+          let value = lodash.get(row, column)
+          if (typeof value !== 'string') {
+            continue
+          } else {
+            value = this.config.isCaseInsensitive() ? value.toLowerCase() : value
+          }
+
+          if (Helper.contains(value, keyword)) {
+            return true
+          }
         }
 
-        if (Helper.contains(value, keyword)) {
-          return true
-        }
-      }
-
-      return false
-    })
+        return false
+      })
+      .all()
   }
 }
