@@ -2,7 +2,6 @@ import { Exception } from '@adonisjs/core/exceptions'
 import LucidDataTable from './engines/lucid_datatable.js'
 import DatabaseDataTable from './engines/database_datatable.js'
 import ObjectDataTable from './engines/object_datatable.js'
-import { Collection } from 'collect.js'
 import { DatabaseQueryBuilderContract, Dictionary } from '@adonisjs/lucid/types/querybuilder'
 import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import { DataTableAbstract } from './datatable_abstract.js'
@@ -34,7 +33,7 @@ export default class Datatables {
     return DatabaseDataTable.create(source)
   }
 
-  static object(source: Record<string, any>[] | Collection<Record<string, any>>) {
-    return ObjectDataTable.create(source as Collection<Record<string, any>>)
+  static object(source: Record<string, any>[]) {
+    return ObjectDataTable.create(source)
   }
 }
