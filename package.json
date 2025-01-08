@@ -91,8 +91,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "tag": "latest",
-    "provenance": true
+    "tag": "latest"
   },
   "release-it": {
     "git": {
@@ -111,16 +110,8 @@
       "@release-it/conventional-changelog": {
         "preset": {
           "name": "angular"
-        },
-        "releaseRules": [
-          { "type": "breaking", "release": "major" },
-          { "type": "feat", "release": "minor" },
-          { "type": "fix", "release": "patch" }
-        ]
+        }
       }
-    },
-    "hooks": {
-      "before:bump": "echo 'Using manual release type: ${RELEASE_TYPE}'"
     }
   },
   "c8": {
