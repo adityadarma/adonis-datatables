@@ -104,7 +104,7 @@
       "tagName": "v${version}"
     },
     "github": {
-      "release": true
+      "release": false
     },
     "npm": {
       "publish": true,
