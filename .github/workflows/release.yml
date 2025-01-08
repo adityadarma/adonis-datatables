@@ -4,7 +4,12 @@ on:
   workflow_dispatch:
     branches:
       - main
-
+    inputs:
+      release_type:
+        description: "Type of release: major, minor, or patch"
+        required: true
+        default: "patch"
+        
 permissions:
   contents: write
   id-token: write

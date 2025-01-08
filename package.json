@@ -1,7 +1,7 @@
 {
   "name": "@adityadarma/adonis-datatables",
   "description": "Package server side datatables on AdonisJS",
-  "version": "1.1.21",
+  "version": "1.1.20",
   "engines": {
     "node": ">=20.6.0"
   },
@@ -18,8 +18,9 @@
   ],
   "exports": {
     ".": "./build/index.js",
-    "./datatables": "./build/services/main.js",
+    "./datatables": "./build/src/datatables.js",
     "./datatables_provider": "./build/providers/datatables_provider.js",
+    "./services/datatables": "./build/services/main.js",
     "./engines/lucid_datatable": "./build/src/engines/lucid_datatable.js",
     "./engines/database_datatable": "./build/src/engines/database_datatable.js",
     "./engines/object_datatable": "./build/src/engines/object_datatable.js",
@@ -101,9 +102,6 @@
       "tagAnnotation": "v${version}",
       "push": true,
       "tagName": "v${version}"
-    },
-    "github": {
-      "release": true
     },
     "npm": {
       "publish": true,
