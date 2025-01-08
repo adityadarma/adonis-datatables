@@ -87,7 +87,7 @@
   "homepage": "https://github.com/adityadarma/adonis-datatables#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/adityadarma/adonis-datatables"
+    "url": "git+https://github.com/adityadarma/adonis-datatables.git"
   },
   "publishConfig": {
     "access": "public",
