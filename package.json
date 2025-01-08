@@ -1,7 +1,7 @@
 {
   "name": "@adityadarma/adonis-datatables",
   "description": "Package server side datatables on AdonisJS",
-  "version": "1.1.20",
+  "version": "1.1.21",
   "engines": {
     "node": ">=20.6.0"
   },
@@ -111,8 +111,16 @@
       "@release-it/conventional-changelog": {
         "preset": {
           "name": "angular"
-        }
+        },
+        "releaseRules": [
+          { "type": "breaking", "release": "major" },
+          { "type": "feat", "release": "minor" },
+          { "type": "fix", "release": "patch" }
+        ]
       }
+    },
+    "hooks": {
+      "before:bump": "echo 'Using manual release type: ${RELEASE_TYPE}'"
     }
   },
   "c8": {
