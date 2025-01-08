@@ -42,18 +42,6 @@
     "version": "npm run build",
     "prepublishOnly": "npm run build"
   },
-  "keywords": [
-    "datatables",
-    "adonis",
-    "adonisjs"
-  ],
-  "author": "Aditya Darma <adhit.boys1@gmail.com>",
-  "license": "MIT",
-  "homepage": "https://github.com/adityadarma/adonis-datatables#readme",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/adityadarma/adonis-datatables"
-  },
   "devDependencies": {
     "@adonisjs/assembler": "^7.7.0",
     "@adonisjs/core": "^6.12.0",
@@ -89,6 +77,18 @@
     "@adonisjs/core": "^6.2.0",
     "@adonisjs/lucid": "^20.0.0||^21.0.0"
   },
+  "keywords": [
+    "datatables",
+    "adonis",
+    "adonisjs"
+  ],
+  "author": "Aditya Darma <adhit.boys1@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/adityadarma/adonis-datatables#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adityadarma/adonis-datatables"
+  },
   "publishConfig": {
     "access": "public",
     "tag": "latest",
@@ -114,21 +114,7 @@
       "@release-it/conventional-changelog": {
         "preset": {
           "name": "angular"
-        },
-        "releaseRules": [
-          {
-            "type": "breaking",
-            "release": "major"
-          },
-          {
-            "type": "feat",
-            "release": "minor"
-          },
-          {
-            "type": "fix",
-            "release": "patch"
-          }
-        ]
+        }
       }
     }
   },
@@ -144,5 +130,10 @@
   "eslintConfig": {
     "extends": "@adonisjs/eslint-config/package"
   },
-  "prettier": "@adonisjs/prettier-config"
+  "prettier": "@adonisjs/prettier-config",
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  }
 }
