@@ -18,8 +18,9 @@
   ],
   "exports": {
     ".": "./build/index.js",
+    "./datatables": "./build/src/datatables.js",
     "./datatables_provider": "./build/providers/datatables_provider.js",
-    "./datatables": "./build/services/main.js",
+    "./services/datatables": "./build/services/main.js",
     "./engines/lucid_datatable": "./build/src/engines/lucid_datatable.js",
     "./engines/database_datatable": "./build/src/engines/database_datatable.js",
     "./engines/object_datatable": "./build/src/engines/object_datatable.js",
