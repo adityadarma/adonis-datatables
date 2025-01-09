@@ -15,7 +15,7 @@ export default class DatatablesProvider {
    * Register bindings to the container
    */
   register() {
-    this.app.container.bind('datatables', () => {
+    this.app.container.singleton('datatables', () => {
       const engines: Record<string, any> = this.app.config.get(`datatables.engines`)
 
       return new Datatables(engines)
