@@ -1,5 +1,5 @@
 import app from '@adonisjs/core/services/app'
-import Datatables from '../src/datatables.js'
+import { Datatables } from '../src/datatables.js'
 
 let datatables: Datatables
 

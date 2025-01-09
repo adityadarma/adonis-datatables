@@ -6,7 +6,7 @@ import { DatabaseQueryBuilderContract, Dictionary } from '@adonisjs/lucid/types/
 import { LucidModel, ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import { DataTableAbstract } from './datatable_abstract.js'
 
-export default class Datatables {
+export class Datatables {
   constructor(protected engines: Record<string, any>) {}
 
   of<T extends DataTableAbstract>(...source: any): T {
