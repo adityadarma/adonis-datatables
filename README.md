@@ -2,11 +2,11 @@
 
 [![gh-workflow-image]][gh-workflow-url] [![npm-image]][npm-url] [![npm-downloads]][npm-downloads] ![][typescript-image] [![license-image]][license-url]
 
-Adonis datatable is an inspiration from laravel datatable. It is heavily inspired by the PHP library [Laravel Datatables](https://yajrabox.com/docs/laravel-datatables){:target="_blank"} and even share some code with services, facade and dependency injection.
+Adonis datatable is an inspiration from laravel datatable. It is heavily inspired by the PHP library [Laravel Datatables](https://yajrabox.com/docs/laravel-datatables){:target="_blank" rel="noopener"} and even share some code with services, facade and dependency injection.
 
 ## Official Documentation
 
-The documentation is available on the [Website](https://adityadarma.github.io/adonis-datatables-docs){:target="_blank"}
+The documentation is available on the [Website](https://adityadarma.github.io/adonis-datatables-docs){:target="_blank" rel="noopener"}
 
 ## License
 
