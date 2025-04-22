@@ -449,7 +449,7 @@ export abstract class DataTableAbstract implements DataTable {
 
   with(key: any, value: any = ''): this {
     if (Array.isArray(key)) {
-      this.appends = key
+      this.appends = { ...this.appends, ...key }
     } else {
       this.appends[key] = Helper.value(value)
     }
