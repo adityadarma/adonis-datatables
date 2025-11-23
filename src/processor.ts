@@ -98,13 +98,19 @@ export default class DataProcessor {
     } else {
       const results: Record<string, any> = {}
 
-      for (const value of Object.values(this.$onlyColumns)) {
-        lodash.set(results, value, lodash.get(data, value))
+      for (const columnName of Object.values(this.$onlyColumns)) {
+        const columnValue = lodash.get(data, columnName)
+        if (columnValue !== undefined) {
+          lodash.set(results, columnName, columnValue)
+        } else if (lodash.has(data, columnName)) {
+          lodash.set(results, columnName, columnValue)
+        }
       }
 
-      for (const value of Object.values(this.$exceptions)) {
-        if (lodash.get(data, value)) {
-          lodash.set(results, value, lodash.get(data, value))
+      for (const exceptionName of Object.values(this.$exceptions)) {
+        const exceptionValue = lodash.get(data, exceptionName)
+        if (exceptionValue !== undefined) {
+          lodash.set(results, exceptionName, exceptionValue)
         }
       }
 

@@ -8,6 +8,12 @@ declare module '@adonisjs/core/types' {
   }
 }
 
+declare module '@adonisjs/core/types' {
+  export interface ContainerBindings {
+    datatables: Datatables
+  }
+}
+
 export default class DatatablesProvider {
   constructor(protected app: ApplicationService) {}
 
@@ -20,31 +26,5 @@ export default class DatatablesProvider {
 
       return new Datatables(engines)
     })
-  }
-
-  /**
-   * The container bindings have booted
-   */
-  async boot() {}
-
-  /**
-   * The application has been booted
-   */
-  async start() {}
-
-  /**
-   * The process has been started
-   */
-  async ready() {}
-
-  /**
-   * Preparing to shut down the app
-   */
-  async shutdown() {}
-}
-
-declare module '@adonisjs/core/types' {
-  export interface ContainerBindings {
-    datatables: Datatables
   }
 }
