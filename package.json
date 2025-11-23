@@ -1,7 +1,7 @@
 {
   "name": "@adityadarma/adonis-datatables",
   "description": "Package server side datatables on AdonisJS",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "engines": {
     "node": ">=20.6.0"
   },
